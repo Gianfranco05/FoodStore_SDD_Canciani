@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "foodstore-backend"
+version = "0.1.0"
+description = "FoodStore backend package"
+requires-python = ">=3.8"
+
+[tool.setuptools.package-dir]
+"" = "backend"
+
+[tool.setuptools.packages.find]
+where = ["backend"]
+include = ["*"]
+
+# This makes "from backend.xxx import yyy" work
+[tool.setuptools.package-data]
+"*" = ["*"]
