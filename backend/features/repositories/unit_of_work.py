@@ -9,6 +9,7 @@ from features.repositories.direccion_repository import DireccionRepository
 from features.repositories.pedido_repository import PedidoRepository
 from features.repositories.forma_pago_repository import FormaPagoRepository
 from features.repositories.configuracion_repository import ConfiguracionRepository
+from features.repositories.pago_repository import PagoRepository
 
 
 class UnitOfWork:
@@ -50,6 +51,10 @@ class UnitOfWork:
     @property
     def configuracion(self) -> ConfiguracionRepository:
         return ConfiguracionRepository(self._session)
+
+    @property
+    def pagos(self) -> PagoRepository:
+        return PagoRepository(self._session)
 
     def commit(self) -> None:
         self._session.commit()

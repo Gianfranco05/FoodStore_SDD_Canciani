@@ -37,33 +37,33 @@
 
 ## 7. Frontend - DashboardPage
 
-- [ ] 7.1 Crear `src/pages/admin/DashboardPage.tsx` con layout de cards de resumen (Total Ventas, Pedidos, Usuarios, Top Productos)
-- [ ] 7.2 Agregar selector de rango de fechas (Desde / Hasta) con date inputs
-- [ ] 7.3 Agregar `<LineChart>` de Recharts para evolución de ventas con selector de granularidad (día/semana/mes)
-- [ ] 7.4 Agregar `<BarChart>` de Recharts para top productos más vendidos
-- [ ] 7.5 Agregar `<PieChart>` de Recharts para distribución de pedidos por estado
-- [ ] 7.6 Implementar estados loading (skeleton) y error (mensaje + reintentar)
-- [ ] 7.7 Implementar hook useAdminMetrics con TanStack Query (queryKey con rango de fechas)
+- [x] 7.1 Crear `src/pages/admin/DashboardPage.tsx` con layout de cards de resumen (Total Ventas, Pedidos, Usuarios, Top Productos)
+- [x] 7.2 Agregar selector de rango de fechas (Desde / Hasta) con date inputs
+- [x] 7.3 Agregar `<LineChart>` de Recharts para evolución de ventas con selector de granularidad (día/semana/mes)
+- [x] 7.4 Agregar `<BarChart>` de Recharts para top productos más vendidos
+- [x] 7.5 Agregar `<PieChart>` de Recharts para distribución de pedidos por estado
+- [x] 7.6 Implementar estados loading (skeleton) y error (mensaje + reintentar)
+- [x] 7.7 Implementar hook useAdminMetrics con TanStack Query (queryKey con rango de fechas)
 
 ## 8. Frontend - UsuariosPage
 
-- [ ] 8.1 Crear `src/pages/admin/UsuariosPage.tsx` con tabla de usuarios (nombre, email, teléfono, roles, activo, creado)
-- [ ] 8.2 Agregar búsqueda por nombre/email con input y filtro por rol con dropdown
-- [ ] 8.3 Agregar botón toggle activo/inactivo por fila con confirmación
-- [ ] 8.4 Crear modal de edición de usuario con campos nombre, teléfono y multi-select de roles
-- [ ] 8.5 Conectar con API: GET /api/admin/usuarios, PUT, PATCH
-- [ ] 8.6 Agregar estados loading, empty, error
+- [x] 8.1 Crear `src/pages/admin/UsuariosPage.tsx` con tabla de usuarios (nombre, email, teléfono, roles, activo, creado)
+- [x] 8.2 Agregar búsqueda por nombre/email con input y filtro por rol con dropdown
+- [x] 8.3 Agregar botón toggle activo/inactivo por fila con confirmación
+- [x] 8.4 Crear modal de edición de usuario con campos nombre, teléfono y multi-select de roles
+- [x] 8.5 Conectar con API: GET /api/admin/usuarios, PUT, PATCH
+- [x] 8.6 Agregar estados loading, empty, error
 
 ## 9. Frontend - ConfigPage
 
-- [ ] 9.1 Crear `src/pages/admin/ConfigPage.tsx` con formulario de configuraciones clave-valor
-- [ ] 9.2 Agregar botón "Guardar" que envía PUT /api/admin/configuracion
-- [ ] 9.3 Mostrar toast de éxito/error al guardar
+- [x] 9.1 Crear `src/pages/admin/ConfigPage.tsx` con formulario de configuraciones clave-valor
+- [x] 9.2 Agregar botón "Guardar" que envía PUT /api/admin/configuracion
+- [x] 9.3 Mostrar toast de éxito/error al guardar
 
 ## 10. Frontend - Rutas y Navegación
 
-- [ ] 10.1 Agregar export de DashboardPage, UsuariosPage, ConfigPage en `src/pages/admin/index.ts`
-- [ ] 10.2 Actualizar `src/app/routes.tsx`: reemplazar PlaceholderPage en /admin con DashboardPage, /admin/usuarios con UsuariosPage, /admin/config con ConfigPage
+- [x] 10.1 Agregar export de DashboardPage, UsuariosPage, ConfigPage en `src/pages/admin/index.ts`
+- [x] 10.2 Actualizar `src/app/routes.tsx`: reemplazar PlaceholderPage en /admin con DashboardPage, /admin/usuarios con UsuariosPage, /admin/config con ConfigPage
 
 ## 11. Verificación
 
@@ -75,3 +75,4 @@
 - [ ] 11.6 Verificar filtros de fecha en dashboard actualizan datos
 - [ ] 11.7 Verificar página de usuarios con búsqueda y edición
 - [ ] 11.8 Verificar página de configuración guarda cambios
+  *(Verificación manual pendiente)*

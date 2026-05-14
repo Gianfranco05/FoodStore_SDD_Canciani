@@ -19,7 +19,7 @@ class AddressService:
     def get_by_id(self, direccion_id: int, usuario_id: int) -> DireccionEntrega:
         direccion = self._session.get(DireccionEntrega, direccion_id)
         if not direccion or direccion.eliminado_en is not None:
-            raise NotFoundException("Dirección no encontrada")
+            raise NotFoundException("DireccionEntrega", direccion_id)
         if direccion.usuario_id != usuario_id:
             raise ForbiddenException("No tenés permisos para acceder a esta dirección")
         return direccion

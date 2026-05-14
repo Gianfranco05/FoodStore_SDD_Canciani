@@ -1,4 +1,3 @@
-# Payments
-from .models import FormaPago
+from .models import FormaPago, Pago
 
-__all__ = ["FormaPago"]
+__all__ = ["FormaPago", "Pago"]

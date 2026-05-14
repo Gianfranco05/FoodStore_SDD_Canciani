@@ -1,0 +1,94 @@
+import logging
+from fastapi import APIRouter, Depends, Request
+
+from features.auth.dependencies import get_current_user
+from features.auth.models import Usuario
+from features.payments.schemas import (
+    PagoCreateRequest, PagoCrearResponse,
+    PagoEstadoResponse,
+)
+from features.payments.service import PaymentService
+from features.payments.dependencies import get_payment_service
+from core.exceptions import BadRequestException
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/api/v1/pagos", tags=["pagos"])
+
+
+@router.post("/crear", response_model=PagoCrearResponse)
+async def crear_pago(
+    data: PagoCreateRequest,
+    current_user: Usuario = Depends(get_current_user),
+    service: PaymentService = Depends(get_payment_service),
+):
+    """
+    Crea una preferencia de pago en MercadoPago para un pedido pendiente.
+    Requiere autenticación. El pedido debe pertenecer al usuario autenticado.
+    """
+    return service.crear_pago(
+        pedido_id=data.pedido_id,
+        usuario_id=current_user.id,
+    )
+
+
+@router.post("/webhook")
+async def webhook_pago(
+    request: Request,
+    service: PaymentService = Depends(get_payment_service),
+):
+    """
+    Webhook IPN de MercadoPago.
+    Endpoint público (sin autenticación).
+    Recibe notificaciones de pago y actualiza el estado del pedido.
+    """
+    try:
+        # MP envía el webhook como form data o JSON
+        if request.headers.get("content-type", "").startswith("application/json"):
+            data = await request.json()
+        else:
+            form_data = await request.form()
+            data = dict(form_data)
+
+        result = service.procesar_webhook(data)
+        return result
+    except Exception as e:
+        logger.exception("Error en webhook MP")
+        # Siempre retornar 200 para MP (evita bloqueo de IP)
+        return {"status": "error", "reason": str(e)}
+
+
+@router.get("/{pedido_id}", response_model=PagoEstadoResponse)
+async def consultar_pago(
+    pedido_id: int,
+    current_user: Usuario = Depends(get_current_user),
+    service: PaymentService = Depends(get_payment_service),
+):
+    """
+    Consulta el estado del pago más reciente de un pedido.
+    El usuario solo puede consultar sus propios pedidos (excepto admins).
+    """
+    es_admin = current_user.es_superadmin or "admin" in [
+        r.nombre for r in (current_user.roles or [])
+    ]
+    return service.consultar_pago(
+        pedido_id=pedido_id,
+        usuario_id=current_user.id,
+        es_admin=es_admin,
+    )
+
+
+@router.post("/{pedido_id}/reintentar", response_model=PagoCrearResponse)
+async def reintentar_pago(
+    pedido_id: int,
+    current_user: Usuario = Depends(get_current_user),
+    service: PaymentService = Depends(get_payment_service),
+):
+    """
+    Reintenta el pago de un pedido cuyo último pago fue rechazado.
+    Crea una nueva preferencia de pago en MercadoPago.
+    """
+    return service.reintentar_pago(
+        pedido_id=pedido_id,
+        usuario_id=current_user.id,
+    )

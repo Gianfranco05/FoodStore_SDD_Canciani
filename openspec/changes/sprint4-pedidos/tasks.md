@@ -2,40 +2,40 @@
 
 ## 1. Backend - DetallePedido Model
 
-- [ ] 1.1 Agregar modelo DetallePedido a `features/orders/models.py`: producto_id, nombre_snapshot, precio_snapshot, cantidad, excluded_ingredient_ids, personalizacion_snapshot
-- [ ] 1.2 Agregar relación `detalles` en Pedido
+- [x] 1.1 Modelo DetallePedido creado en `features/orders/models.py` con todos los campos
+- [x] 1.2 Relación `detalles` agregada en Pedido
 
 ## 2. Backend - Schemas
 
-- [ ] 2.1 Crear `features/orders/schemas.py`: PedidoCreateRequest, PedidoResponse, DetallePedidoResponse, HistorialEstadoResponse, EstadoUpdateRequest, PedidoListResponse
+- [x] 2.1 Schemas creados en `features/orders/schemas.py` con todos los modelos de request/response
 
 ## 3. Backend - OrderService
 
-- [ ] 3.1 Crear `features/orders/service.py`: OrderService con create (atómico con UoW), list_mine, get_by_id, list_all (admin), update_estado (FSM con validación de transiciones)
-- [ ] 3.2 Implementar FSM: estados válidos y transiciones permitidas
+- [x] 3.1 OrderService completo: create (atómico con UoW), list_mine, get_by_id, list_all (admin), update_estado (FSM)
+- [x] 3.2 FSM implementada con 7 estados y transiciones validadas por roles
 
 ## 4. Backend - Router
 
-- [ ] 4.1 Crear `features/orders/router.py`: POST /pedidos, GET /pedidos, GET /pedidos/{id}, PUT /pedidos/{id}/estado, GET /pedidos/admin
-- [ ] 4.2 Registrar router en main.py
+- [x] 4.1 Router creado con 5 endpoints (POST /pedidos, GET /pedidos, GET /pedidos/{id}, PUT /pedidos/{id}/estado, GET /pedidos/admin)
+- [x] 4.2 Router registrado en main.py con prefijo /api/v1/pedidos
 
 ## 5. Frontend - Checkout
 
-- [ ] 5.1 Conectar botón "Iniciar Pedido" en CartPage a POST /api/v1/pedidos
-- [ ] 5.2 Al crear pedido, limpiar carrito y redirigir a detalle del pedido
+- [x] 5.1 CartPage → POST /api/v1/pedidos conectado con selección de dirección
+- [x] 5.2 Al crear pedido: limpia carrito, toast de éxito, redirige a /orders/{id}
 
 ## 6. Frontend - Página de Pedidos (cliente)
 
-- [ ] 6.1 Crear `src/pages/OrdersPage.tsx`: listado de pedidos del usuario
-- [ ] 6.2 Crear `src/pages/OrderDetailPage.tsx`: detalle con items, historial estados, timeline visual
+- [x] 6.1 OrdersPage creada: listado de pedidos con estados coloreados y link a detalle
+- [x] 6.2 OrderDetailPage creada: items, dirección, timeline, cancelación, PaymentButton, estado de pago
 
 ## 7. Frontend - Panel de Pedidos (admin/gestor)
 
-- [ ] 7.1 Agregar panel en admin: listar todos los pedidos, avanzar/cancelar estados
+- [x] 7.1 PedidosPage (admin) creada: listar todos los pedidos con botones de transición FSM
 
 ## 8. Frontend - Rutas
 
-- [ ] 8.1 Agregar /orders, /orders/{id}, /admin/pedidos en routes.tsx
+- [x] 8.1 Rutas /orders, /orders/{id}, /orders/{id}/success, /orders/{id}/failure, /orders/{id}/pending, /admin/pedidos agregadas en routes.tsx
 
 ## 9. Verificación
 

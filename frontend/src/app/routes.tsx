@@ -12,6 +12,9 @@ import DireccionesPage from '../pages/DireccionesPage'
 import PerfilPage from '../pages/PerfilPage'
 import OrdersPage from '../pages/OrdersPage'
 import OrderDetailPage from '../pages/OrderDetailPage'
+import PagoExitosoPage from '../pages/PagoExitosoPage'
+import PagoFallidoPage from '../pages/PagoFallidoPage'
+import PagoPendientePage from '../pages/PagoPendientePage'
 import { CategoriasPage, IngredientesPage, ProductosPage, PedidosPage, DashboardPage, UsuariosPage, ConfigPage } from '../pages/admin'
 
 export function AppRoutes() {
@@ -35,6 +38,9 @@ export function AppRoutes() {
           <Route path="/cart" element={<CartPage />} />
           <Route path="/orders" element={<OrdersPage />} />
           <Route path="/orders/:id" element={<OrderDetailPage />} />
+          <Route path="/orders/:id/success" element={<PagoExitosoPage />} />
+          <Route path="/orders/:id/failure" element={<PagoFallidoPage />} />
+          <Route path="/orders/:id/pending" element={<PagoPendientePage />} />
           <Route path="/perfil" element={<PerfilPage />} />
           <Route path="/direcciones" element={<DireccionesPage />} />
         </Route>

@@ -57,13 +57,13 @@
 
 ## 10. Verificación
 
-- [x] 10.1 Verificar que backend inicia sin errores y Swagger muestra los endpoints de auth
-- [ ] 10.2 Verificar registro de usuario (POST /register) funciona desde Swagger
-- [ ] 10.3 Verificar login y obtención de tokens funciona
-- [ ] 10.4 Verificar refresh de token funciona
+- [x] 10.1 Backend inicia sin errores y Swagger muestra endpoints de auth
+- [ ] 10.2 Verificar registro de usuario (POST /register) desde Swagger
+- [ ] 10.3 Verificar login y obtención de tokens
+- [ ] 10.4 Verificar refresh de token
 - [ ] 10.5 Verificar rate limiting (5 intentos → 429)
 - [ ] 10.6 Verificar que frontend inicia y muestra login/register
 - [ ] 10.7 Verificar flujo completo: register → login → navegar → logout
-- [ ] 10.8 Verificar que rutas protegidas redirigen a login si no autenticado
-- [ ] 10.9 Verificar que la navegación cambia según el rol
-  *(Verificación pendiente — se hará al final junto con Sprint 2)*
+- [ ] 10.8 Verificar rutas protegidas redirigen a login si no autenticado
+- [ ] 10.9 Verificar navegación cambia según el rol
+  *(Verificación manual pendiente — correr con `uvicorn backend.main:app --reload` y `npm run dev`)*

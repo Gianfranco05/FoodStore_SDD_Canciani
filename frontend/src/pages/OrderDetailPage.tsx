@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import { Button } from '../shared/ui/Button'
+import { PaymentButton } from '../shared/ui/PaymentButton'
 import { Card } from '../shared/ui/Card'
 import { useUIStore } from '../stores/uiStore'
 
@@ -61,6 +62,24 @@ const STATUS_LABELS: Record<string, string> = {
   cancelado: 'Cancelado',
 }
 
+interface PagoInfo {
+  estado: string | null
+  disponible: boolean
+  pago: {
+    id: number
+    estado: string
+    mp_status: string | null
+    monto: number
+    created_at: string
+  } | null
+}
+
+const PAYMENT_STATUS_CONFIG: Record<string, { label: string; color: string; icon: string }> = {
+  aprobado: { label: 'Pagado', color: 'text-green-600 bg-green-50 border-green-200', icon: '✅' },
+  rechazado: { label: 'Rechazado', color: 'text-red-600 bg-red-50 border-red-200', icon: '❌' },
+  pendiente: { label: 'Pendiente', color: 'text-yellow-600 bg-yellow-50 border-yellow-200', icon: '⏳' },
+}
+
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -69,6 +88,8 @@ export default function OrderDetailPage() {
   const [pedido, setPedido] = useState<Pedido | null>(null)
   const [loading, setLoading] = useState(true)
   const [cancelling, setCancelling] = useState(false)
+  const [pagoInfo, setPagoInfo] = useState<PagoInfo | null>(null)
+  const [loadingPago, setLoadingPago] = useState(false)
 
   const fetchPedido = useCallback(async () => {
     try {
@@ -82,9 +103,26 @@ export default function OrderDetailPage() {
     }
   }, [id, addToast, navigate])
 
+  const fetchPagoInfo = useCallback(async () => {
+    setLoadingPago(true)
+    try {
+      const res = await api.get(`/pagos/${id}`)
+      setPagoInfo(res.data)
+    } catch {
+      // Si el endpoint falla (ej: no hay pagos), no mostramos nada
+      setPagoInfo(null)
+    } finally {
+      setLoadingPago(false)
+    }
+  }, [id])
+
   useEffect(() => {
     fetchPedido()
   }, [fetchPedido])
+
+  useEffect(() => {
+    if (id) fetchPagoInfo()
+  }, [id, fetchPagoInfo])
 
   const handleCancel = async () => {
     if (!confirm('¿Estás seguro de cancelar este pedido?')) return
@@ -219,8 +257,40 @@ export default function OrderDetailPage() {
                 <span>Total</span>
                 <span className="text-green-600">${pedido.total.toFixed(2)}</span>
               </div>
+
+              {/* Estado del pago */}
+              {pagoInfo?.pago && pagoInfo.estado && (
+                <div className="mt-3 pt-3 border-t border-gray-100">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-500">Estado del pago</span>
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${
+                      PAYMENT_STATUS_CONFIG[pagoInfo.estado]?.color || 'text-gray-500 bg-gray-50'
+                    }`}>
+                      {PAYMENT_STATUS_CONFIG[pagoInfo.estado]?.label || pagoInfo.estado}
+                    </span>
+                  </div>
+                  {pagoInfo.estado === 'rechazado' && (
+                    <p className="text-xs text-red-500 mt-1">
+                      El pago fue rechazado. {pedido.estado_nombre === 'pendiente' ? 'Podés reintentarlo desde la sección de Pago.' : ''}
+                    </p>
+                  )}
+                </div>
+              )}
+              {loadingPago && (
+                <div className="mt-3 pt-3 border-t border-gray-100">
+                  <p className="text-xs text-gray-400">Cargando estado del pago...</p>
+                </div>
+              )}
             </div>
           </Card>
+
+          {/* Pago */}
+          {pedido.estado_nombre === 'pendiente' && (
+            <Card className="p-5">
+              <h2 className="font-semibold text-gray-800 mb-3">Pago</h2>
+              <PaymentButton pedidoId={pedido.id} monto={pedido.total} pagoEstado={pagoInfo?.estado} />
+            </Card>
+          )}
 
           {/* Timeline de estados */}
           <Card className="p-5">

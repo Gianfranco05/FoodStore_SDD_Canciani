@@ -4,9 +4,11 @@ import { api } from './api'
  * API helper para endpoints de administración (/api/admin/*).
  * Reutiliza la misma instancia de axios (con interceptors de auth y refresh)
  * pero antepone el prefijo /api/admin.
+ *
+ * Deriva el prefijo de api.defaults.baseURL para respetar VITE_API_URL.
  */
 
-const ADMIN_PREFIX = 'http://localhost:8000/api/admin'
+const ADMIN_PREFIX = api.defaults.baseURL!.replace('/api/v1', '/api/admin')
 
 export const adminApi = {
   // ─── Usuarios ──────────────────────────────────

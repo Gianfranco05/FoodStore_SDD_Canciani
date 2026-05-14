@@ -58,7 +58,7 @@
 
 - [x] 9.1 Agregar rutas /cart (autenticado), /direcciones (autenticado), /perfil (autenticado)
 - [x] 9.2 Agregar items en sidebar: Carrito, Mis Direcciones, Mi Perfil (visibles según rol)
-- [ ] 9.3 Actualizar App.tsx si es necesario
+- [x] 9.3 App.tsx verificado: es minimal (Providers + AppRoutes), no necesita cambios
 
 ## 10. Verificación
 

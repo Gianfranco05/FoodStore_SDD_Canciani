@@ -7,6 +7,7 @@ from features.repositories.producto_repository import ProductoRepository
 from features.repositories.direccion_repository import DireccionRepository
 from features.repositories.pedido_repository import PedidoRepository
 from features.repositories.forma_pago_repository import FormaPagoRepository
+from features.repositories.pago_repository import PagoRepository
 
 __all__ = [
     "BaseRepository",
@@ -18,4 +19,5 @@ __all__ = [
     "DireccionRepository",
     "PedidoRepository",
     "FormaPagoRepository",
+    "PagoRepository",
 ]

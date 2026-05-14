@@ -94,7 +94,7 @@ class AdminService:
     def update_user(self, user_id: int, data: UserUpdateRequest) -> UserListResponse:
         usuario = self._session.get(Usuario, user_id)
         if not usuario:
-            raise NotFoundException(f"Usuario {user_id} no encontrado")
+            raise NotFoundException("Usuario", user_id)
 
         # Update fields
         if data.nombre is not None:
@@ -149,7 +149,7 @@ class AdminService:
 
         usuario = self._session.get(Usuario, user_id)
         if not usuario:
-            raise NotFoundException(f"Usuario {user_id} no encontrado")
+            raise NotFoundException("Usuario", user_id)
 
         usuario.activo = data.activo
         usuario.actualizado_en = datetime.utcnow()
@@ -407,7 +407,7 @@ class AdminService:
     def _build_user_response(self, user_id: int) -> UserListResponse:
         usuario = self._session.get(Usuario, user_id)
         if not usuario:
-            raise NotFoundException(f"Usuario {user_id} no encontrado")
+            raise NotFoundException("Usuario", user_id)
         roles = self._get_user_role_names(user_id)
         return UserListResponse(
             id=usuario.id,

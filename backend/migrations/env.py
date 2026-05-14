@@ -2,7 +2,7 @@ from logging.config import fileConfig
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent.resolve().parent))
+sys.path.insert(0, str(Path(__file__).parent.parent.resolve()))
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
@@ -21,14 +21,14 @@ if config.config_file_name is not None:
 # add your model's MetaData object here
 # for 'autogenerate' support
 from sqlmodel import SQLModel
-from backend.features.auth.models import Rol, Usuario, UsuarioRol, RefreshToken
-from backend.features.categories.models import Categoria
-from backend.features.ingredients.models import Ingrediente
-from backend.features.products.models import Producto, ProductoCategoria, ProductoIngrediente
-from backend.features.addresses.models import DireccionEntrega
-from backend.features.orders.models import EstadoPedido, Pedido, DetallePedido, HistorialEstadoPedido
-from backend.features.payments.models import FormaPago
-from backend.features.admin.models import Configuracion
+from features.auth.models import Rol, Usuario, UsuarioRol, RefreshToken
+from features.categories.models import Categoria
+from features.ingredients.models import Ingrediente
+from features.products.models import Producto, ProductoCategoria, ProductoIngrediente
+from features.addresses.models import DireccionEntrega
+from features.orders.models import EstadoPedido, Pedido, DetallePedido, HistorialEstadoPedido
+from features.payments.models import FormaPago, Pago
+from features.admin.models import Configuracion
 
 target_metadata = SQLModel.metadata
 

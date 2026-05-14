@@ -21,9 +21,11 @@ from core import (
     ForbiddenException,
 )
 from core.rate_limit import limiter
+from config import get_settings
 
 
 def create_app() -> FastAPI:
+    settings = get_settings()
     app = FastAPI(
         title="FoodStore API",
         description="API para sistema de pedidos de comida",
@@ -35,9 +37,10 @@ def create_app() -> FastAPI:
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
     
     # CORS
+    cors_origins = [o.strip() for o in settings.CORS_ORIGINS.split(",")]
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+        allow_origins=cors_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -58,7 +61,7 @@ def create_app() -> FastAPI:
         return {"status": "healthy", "version": "0.1.0"}
     
     # Incluir routers de features
-    from features.auth import router as auth_router
+    from features.auth.router import router as auth_router
     app.include_router(auth_router, prefix="/api/v1/auth", tags=["auth"])
     
     from features.addresses.router import router as direcciones_router
@@ -81,6 +84,9 @@ def create_app() -> FastAPI:
 
     from features.admin.router import router as admin_router
     app.include_router(admin_router, tags=["admin"])
+
+    from features.payments.router import router as pagos_router
+    app.include_router(pagos_router, tags=["pagos"])
     
     # Registrar endpoint de prueba en la raíz para verificar conexión
     @app.get("/api/v1/test")

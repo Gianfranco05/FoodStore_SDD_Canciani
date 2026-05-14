@@ -74,14 +74,14 @@
 
 ## 12. Verificación
 
-- [ ] 12.1 Verificar CRUD de categorías funciona desde Swagger
-- [ ] 12.2 Verificar CRUD de ingredientes funciona
-- [ ] 12.3 Verificar CRUD de productos funciona
+- [ ] 12.1 Verificar CRUD de categorías desde Swagger
+- [ ] 12.2 Verificar CRUD de ingredientes
+- [ ] 12.3 Verificar CRUD de productos
 - [ ] 12.4 Verificar asignación de categorías e ingredientes a productos
 - [ ] 12.5 Verificar actualización de stock (set, increment, decrement, límite negativo)
 - [ ] 12.6 Verificar catálogo público con filtros y paginación
 - [ ] 12.7 Verificar detalle de producto público
 - [ ] 12.8 Verificar protección de roles (STOCK/ADMIN pueden, CLIENT no)
-- [ ] 12.9 Verificar frontend: páginas de admin y catálogo público funcionan
-- [ ] 12.10 Verificar flujo completo: crear categoría → crear ingrediente → crear producto → ver en catálogo
-  *(Verificación pendiente — se hará al final junto con Sprint 1)*
+- [ ] 12.9 Verificar frontend: páginas de admin y catálogo público
+- [ ] 12.10 Verificar flujo completo: categoría → ingrediente → producto → catálogo
+  *(Verificación manual pendiente)*

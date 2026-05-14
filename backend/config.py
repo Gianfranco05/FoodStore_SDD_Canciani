@@ -1,3 +1,4 @@
+from typing import Optional
 from pydantic_settings import BaseSettings
 from functools import lru_cache
 
@@ -14,9 +15,17 @@ class Settings(BaseSettings):
     
     RATE_LIMIT_PER_MINUTE: int = 60
     
+    # MercadoPago
+    MP_ACCESS_TOKEN: Optional[str] = None
+    MP_PUBLIC_KEY: Optional[str] = None
+    
+    # CORS
+    CORS_ORIGINS: str = "http://localhost:5173"
+    
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
+        extra = "ignore"
 
 @lru_cache
 def get_settings() -> Settings:

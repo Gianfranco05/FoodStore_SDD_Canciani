@@ -4,9 +4,12 @@ from sqlmodel import Session, SQLModel
 from contextlib import contextmanager
 from typing import Generator
 
-DATABASE_URL = "mysql+mysqlconnector://root@localhost:3306/foodstore"
+from config import get_settings
 
-engine = create_engine(DATABASE_URL, echo=True)
+settings = get_settings()
+DATABASE_URL = settings.DATABASE_URL
+
+engine = create_engine(DATABASE_URL, echo=settings.DEBUG)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, class_=Session)
 
 def create_db_and_tables():
