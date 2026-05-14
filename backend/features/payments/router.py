@@ -69,7 +69,7 @@ async def consultar_pago(
     El usuario solo puede consultar sus propios pedidos (excepto admins).
     """
     es_admin = current_user.es_superadmin or "admin" in [
-        r.nombre for r in (current_user.roles or [])
+        r.rol.nombre for r in (current_user.roles or []) if r.rol
     ]
     return service.consultar_pago(
         pedido_id=pedido_id,

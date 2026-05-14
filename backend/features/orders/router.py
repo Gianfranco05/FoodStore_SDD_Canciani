@@ -4,6 +4,7 @@ from sqlmodel import Session
 from dependencies import get_db_session
 from features.auth.dependencies import get_current_user
 from features.auth.models import Usuario
+from features.auth.requires import require_role
 from features.orders.schemas import (
     PedidoCreateRequest, PedidoResponse, PedidoListResponse,
     EstadoUpdateRequest, DetallePedidoResponse,
@@ -23,17 +24,9 @@ async def list_all_pedidos(
     limit: int = Query(default=20, ge=1, le=100),
     current_user: Usuario = Depends(get_current_user),
     service: OrderService = Depends(get_order_service),
+    _= Depends(require_role("admin", "cocinero", "repartidor")),
 ):
     """Lista todos los pedidos (solo admin/gestor/cocinero/repartidor)."""
-    # Verificar rol
-    user_roles = [r.nombre.lower() if hasattr(r, 'nombre') else str(r).lower() for r in (current_user.roles or [])]
-    allowed_roles = {"admin", "cocinero", "repartidor"}
-    if not any(r in allowed_roles for r in user_roles):
-        from fastapi import HTTPException
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="No tenés permisos para listar todos los pedidos",
-        )
 
     items, total = service.list_all(page=page, limit=limit)
     responses = [service._build_response(p) for p in items]
