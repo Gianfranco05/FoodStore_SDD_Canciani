@@ -116,15 +116,15 @@ export default function CategoriasPage() {
       <ul className="space-y-1" style={{ paddingLeft: level > 0 ? 24 : 0 }}>
         {nodes.map((cat) => (
           <li key={cat.id}>
-            <div className="flex items-center justify-between py-2 px-3 hover:bg-gray-50 rounded-lg group">
+            <div className="flex items-center justify-between py-2 px-3 hover:bg-accent rounded-lg group">
               <div className="flex items-center gap-2">
-                <span className="text-gray-400">{level > 0 ? '└─' : '📁'}</span>
-                <span className="font-medium text-gray-800">{cat.nombre}</span>
+                <span className="text-muted-foreground">{level > 0 ? '└─' : '📁'}</span>
+                <span className="font-medium text-foreground">{cat.nombre}</span>
                 {!cat.activo && (
-                  <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded">inactivo</span>
+                  <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded">inactivo</span>
                 )}
                 {cat.slug && (
-                  <span className="text-xs text-gray-400 hidden sm:inline">/{cat.slug}</span>
+                  <span className="text-xs text-muted-foreground hidden sm:inline">/{cat.slug}</span>
                 )}
               </div>
               <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -150,14 +150,14 @@ export default function CategoriasPage() {
     return result
   }
 
-  if (loading) return <div className="p-8 text-center text-gray-500">Cargando categorías...</div>
+  if (loading) return <div className="p-8 text-center text-muted-foreground">Cargando categorías...</div>
 
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Categorías</h1>
-          <p className="text-sm text-gray-500 mt-1">Gestión jerárquica de categorías del menú</p>
+          <h1 className="text-2xl font-bold text-foreground">Categorías</h1>
+          <p className="text-sm text-muted-foreground mt-1">Gestión jerárquica de categorías del menú</p>
         </div>
         <Button onClick={openCreate}>+ Nueva Categoría</Button>
       </div>
@@ -175,9 +175,9 @@ export default function CategoriasPage() {
                 required
               />
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1">Descripción</label>
+                <label className="text-sm font-medium text-foreground block mb-1">Descripción</label>
                 <textarea
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   rows={3}
                   value={form.descripcion}
                   onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
@@ -194,9 +194,9 @@ export default function CategoriasPage() {
                 onChange={(e) => setForm({ ...form, imagen_url: e.target.value })}
               />
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1">Categoría padre</label>
+                <label className="text-sm font-medium text-foreground block mb-1">Categoría padre</label>
                 <select
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   value={form.padre_id ?? ''}
                   onChange={(e) => setForm({ ...form, padre_id: e.target.value ? Number(e.target.value) : null })}
                 >
@@ -223,7 +223,7 @@ export default function CategoriasPage() {
 
       {/* Tree */}
       {categorias.length === 0 ? (
-        <div className="text-center py-12 text-gray-400">
+        <div className="text-center py-12 text-muted-foreground">
           <p className="text-lg mb-2">No hay categorías todavía</p>
           <p className="text-sm">Creá la primera categoría para comenzar</p>
         </div>

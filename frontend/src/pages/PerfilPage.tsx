@@ -15,7 +15,7 @@ export default function PerfilPage() {
   const [saving, setSaving] = useState(false)
 
   if (!user) {
-    return <div className="p-8 text-center text-gray-500">Debés iniciar sesión para ver tu perfil</div>
+    return <div className="p-8 text-center text-muted-foreground">Debés iniciar sesión para ver tu perfil</div>
   }
 
   const handleSave = async () => {
@@ -44,20 +44,20 @@ export default function PerfilPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold text-gray-800 mb-6">Mi Perfil</h1>
+      <h1 className="text-2xl font-bold text-foreground mb-6">Mi Perfil</h1>
 
       <Card className="p-6">
         <div className="space-y-6">
           {/* Avatar / Info header */}
-          <div className="flex items-center gap-4 pb-6 border-b border-gray-100">
+          <div className="flex items-center gap-4 pb-6 border-b border-border">
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-              <span className="text-2xl font-bold text-green-600">
+              <span className="text-2xl font-bold text-primary">
                 {user.nombre.charAt(0).toUpperCase()}
               </span>
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-800">{user.nombre}</h2>
-              <p className="text-sm text-gray-500">{user.email}</p>
+              <h2 className="text-xl font-bold text-foreground">{user.nombre}</h2>
+              <p className="text-sm text-muted-foreground">{user.email}</p>
               <div className="flex gap-2 mt-2">
                 {user.roles?.map((rol) => (
                   <span key={rol} className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">
@@ -81,7 +81,7 @@ export default function PerfilPage() {
                 label="Email"
                 value={user.email}
                 disabled
-                className="bg-gray-50"
+                className="bg-muted"
               />
               <Input
                 label="Teléfono"
@@ -102,12 +102,12 @@ export default function PerfilPage() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Email</label>
-                  <p className="text-gray-800 mt-1">{user.email}</p>
+                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Email</label>
+                  <p className="text-foreground mt-1">{user.email}</p>
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Teléfono</label>
-                  <p className="text-gray-800 mt-1">{user.telefono || '—'}</p>
+                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Teléfono</label>
+                  <p className="text-foreground mt-1">{user.telefono || '—'}</p>
                 </div>
               </div>
               <Button onClick={() => setEditing(true)}>Editar Perfil</Button>

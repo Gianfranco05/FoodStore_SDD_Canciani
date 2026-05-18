@@ -116,14 +116,14 @@ export default function IngredientesPage() {
     }
   }
 
-  if (loading) return <div className="p-8 text-center text-gray-500">Cargando ingredientes...</div>
+  if (loading) return <div className="p-8 text-center text-muted-foreground">Cargando ingredientes...</div>
 
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Ingredientes</h1>
-          <p className="text-sm text-gray-500 mt-1">Gestión de ingredientes y alérgenos ({total} registros)</p>
+          <h1 className="text-2xl font-bold text-foreground">Ingredientes</h1>
+          <p className="text-sm text-muted-foreground mt-1">Gestión de ingredientes y alérgenos ({total} registros)</p>
         </div>
         <Button onClick={openCreate}>+ Nuevo Ingrediente</Button>
       </div>
@@ -141,9 +141,9 @@ export default function IngredientesPage() {
                 required
               />
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1">Unidad de medida *</label>
+                <label className="text-sm font-medium text-foreground block mb-1">Unidad de medida *</label>
                 <select
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   value={form.unidad_medida}
                   onChange={(e) => setForm({ ...form, unidad_medida: e.target.value })}
                 >
@@ -177,7 +177,7 @@ export default function IngredientesPage() {
 
       {/* Table */}
       {items.length === 0 ? (
-        <div className="text-center py-12 text-gray-400">
+        <div className="text-center py-12 text-muted-foreground">
           <p className="text-lg mb-2">No hay ingredientes todavía</p>
           <p className="text-sm">Creá el primer ingrediente para comenzar</p>
         </div>
@@ -185,20 +185,20 @@ export default function IngredientesPage() {
         <Card className="overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-muted border-b border-border">
                 <tr>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Nombre</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Unidad</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Alérgenos</th>
-                  <th className="text-center px-4 py-3 font-medium text-gray-600">Disponible</th>
-                  <th className="text-right px-4 py-3 font-medium text-gray-600">Acciones</th>
+                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Nombre</th>
+                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Unidad</th>
+                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Alérgenos</th>
+                  <th className="text-center px-4 py-3 font-medium text-muted-foreground">Disponible</th>
+                  <th className="text-right px-4 py-3 font-medium text-muted-foreground">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-border">
                 {items.map((item) => (
-                  <tr key={item.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 font-medium text-gray-800">{item.nombre}</td>
-                    <td className="px-4 py-3 text-gray-600">{item.unidad_medida}</td>
+                  <tr key={item.id} className="hover:bg-accent transition-colors">
+                    <td className="px-4 py-3 font-medium text-foreground">{item.nombre}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{item.unidad_medida}</td>
                     <td className="px-4 py-3">
                       {item.alergenos ? (
                         <div className="flex gap-1 flex-wrap">
@@ -209,7 +209,7 @@ export default function IngredientesPage() {
                           ))}
                         </div>
                       ) : (
-                        <span className="text-gray-400">—</span>
+                        <span className="text-muted-foreground">—</span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-center">
@@ -217,7 +217,7 @@ export default function IngredientesPage() {
                         onClick={() => toggleDisponible(item)}
                         className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full transition-colors ${
                           item.disponible
-                            ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                            ? 'bg-green-100 text-primary hover:bg-green-200'
                             : 'bg-red-100 text-red-700 hover:bg-red-200'
                         }`}
                       >
@@ -236,11 +236,11 @@ export default function IngredientesPage() {
             </table>
           </div>
           {total > limit && (
-            <div className="flex justify-center gap-2 p-4 border-t border-gray-100">
+            <div className="flex justify-center gap-2 p-4 border-t border-border">
               <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
                 Anterior
               </Button>
-              <span className="text-sm text-gray-500 self-center">Página {page}</span>
+              <span className="text-sm text-muted-foreground self-center">Página {page}</span>
               <Button variant="outline" size="sm" disabled={page * limit >= total} onClick={() => setPage(page + 1)}>
                 Siguiente
               </Button>

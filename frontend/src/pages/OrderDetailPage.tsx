@@ -75,8 +75,8 @@ interface PagoInfo {
 }
 
 const PAYMENT_STATUS_CONFIG: Record<string, { label: string; color: string; icon: string }> = {
-  aprobado: { label: 'Pagado', color: 'text-green-600 bg-green-50 border-green-200', icon: '✅' },
-  rechazado: { label: 'Rechazado', color: 'text-red-600 bg-red-50 border-red-200', icon: '❌' },
+  aprobado: { label: 'Pagado', color: 'text-primary bg-primary/10 border-primary/20', icon: '✅' },
+  rechazado: { label: 'Rechazado', color: 'text-destructive bg-destructive/10 border-destructive/20', icon: '❌' },
   pendiente: { label: 'Pendiente', color: 'text-yellow-600 bg-yellow-50 border-yellow-200', icon: '⏳' },
 }
 
@@ -143,13 +143,13 @@ export default function OrderDetailPage() {
   }
 
   if (loading) {
-    return <div className="p-8 text-center text-gray-500">Cargando pedido...</div>
+    return <div className="p-8 text-center text-muted-foreground">Cargando pedido...</div>
   }
 
   if (!pedido) {
     return (
       <div className="p-8 text-center">
-        <p className="text-gray-500 mb-4">Pedido no encontrado</p>
+        <p className="text-muted-foreground mb-4">Pedido no encontrado</p>
         <Link to="/orders">
           <Button>Volver a Mis Pedidos</Button>
         </Link>
@@ -163,13 +163,13 @@ export default function OrderDetailPage() {
     <div className="max-w-4xl mx-auto px-4 py-8">
       {/* Header */}
       <div className="mb-6">
-        <Link to="/orders" className="text-sm text-green-600 hover:text-green-700 mb-2 inline-block">
+        <Link to="/orders" className="text-sm text-primary hover:text-primary/80 mb-2 inline-block">
           &larr; Volver a Mis Pedidos
         </Link>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">Pedido #{pedido.id}</h1>
-            <p className="text-sm text-gray-500 mt-1">
+            <h1 className="text-2xl font-bold text-foreground">Pedido #{pedido.id}</h1>
+            <p className="text-sm text-muted-foreground mt-1">
               {new Date(pedido.fecha_pedido).toLocaleDateString('es-AR', {
                 year: 'numeric',
                 month: 'long',
@@ -180,7 +180,7 @@ export default function OrderDetailPage() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <span className={`text-sm px-3 py-1.5 rounded-full border font-medium ${STATUS_COLORS[pedido.estado_nombre] || 'bg-gray-100 text-gray-600'}`}>
+            <span className={`text-sm px-3 py-1.5 rounded-full border font-medium ${STATUS_COLORS[pedido.estado_nombre] || 'bg-muted text-muted-foreground'}`}>
               {STATUS_LABELS[pedido.estado_nombre] || pedido.estado_nombre}
             </span>
             {canCancel && (
@@ -196,28 +196,28 @@ export default function OrderDetailPage() {
         {/* Detalle de productos */}
         <div className="lg:col-span-2 space-y-6">
           <Card className="p-5">
-            <h2 className="font-semibold text-gray-800 mb-4">Productos</h2>
+            <h2 className="font-semibold text-foreground mb-4">Productos</h2>
             <div className="space-y-3">
               {pedido.detalles.map((det) => (
-                <div key={det.id} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+                <div key={det.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <Link
                         to={`/productos/${det.producto_id}`}
-                        className="font-medium text-gray-800 hover:text-green-600"
+                        className="font-medium text-foreground hover:text-primary"
                       >
                         {det.nombre_snapshot}
                       </Link>
-                      <span className="text-xs text-gray-400">x{det.cantidad}</span>
+                      <span className="text-xs text-muted-foreground">x{det.cantidad}</span>
                     </div>
                     {det.personalizacion_snapshot && (
-                      <p className="text-xs text-gray-500 mt-0.5">{det.personalizacion_snapshot}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{det.personalizacion_snapshot}</p>
                     )}
                     {det.excluded_ingredient_ids && (
-                      <p className="text-xs text-gray-400 mt-0.5">Ingredientes excluidos</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">Ingredientes excluidos</p>
                     )}
                   </div>
-                  <span className="font-medium text-gray-700">${det.subtotal.toFixed(2)}</span>
+                  <span className="font-medium text-foreground">${det.subtotal.toFixed(2)}</span>
                 </div>
               ))}
             </div>
@@ -225,15 +225,15 @@ export default function OrderDetailPage() {
 
           {/* Dirección de entrega */}
           <Card className="p-5">
-            <h2 className="font-semibold text-gray-800 mb-3">Dirección de Entrega</h2>
-            <p className="text-sm text-gray-600">{pedido.direccion_snapshot || 'Sin dirección registrada'}</p>
+            <h2 className="font-semibold text-foreground mb-3">Dirección de Entrega</h2>
+            <p className="text-sm text-muted-foreground">{pedido.direccion_snapshot || 'Sin dirección registrada'}</p>
           </Card>
 
           {/* Notas */}
           {pedido.notas && (
             <Card className="p-5">
-              <h2 className="font-semibold text-gray-800 mb-3">Notas</h2>
-              <p className="text-sm text-gray-600">{pedido.notas}</p>
+              <h2 className="font-semibold text-foreground mb-3">Notas</h2>
+              <p className="text-sm text-muted-foreground">{pedido.notas}</p>
             </Card>
           )}
         </div>
@@ -242,43 +242,43 @@ export default function OrderDetailPage() {
         <div className="space-y-6">
           {/* Resumen */}
           <Card className="p-5">
-            <h2 className="font-semibold text-gray-800 mb-3">Resumen</h2>
+            <h2 className="font-semibold text-foreground mb-3">Resumen</h2>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-gray-500">Subtotal</span>
+                <span className="text-muted-foreground">Subtotal</span>
                 <span>${pedido.subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">Envío</span>
+                <span className="text-muted-foreground">Envío</span>
                 <span>{pedido.costo_envio === 0 ? 'Gratis' : `$${pedido.costo_envio.toFixed(2)}`}</span>
               </div>
               <hr />
               <div className="flex justify-between font-bold text-lg">
                 <span>Total</span>
-                <span className="text-green-600">${pedido.total.toFixed(2)}</span>
+                <span className="text-primary">${pedido.total.toFixed(2)}</span>
               </div>
 
               {/* Estado del pago */}
               {pagoInfo?.pago && pagoInfo.estado && (
-                <div className="mt-3 pt-3 border-t border-gray-100">
+                <div className="mt-3 pt-3 border-t border-border">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-500">Estado del pago</span>
+                    <span className="text-muted-foreground">Estado del pago</span>
                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${
-                      PAYMENT_STATUS_CONFIG[pagoInfo.estado]?.color || 'text-gray-500 bg-gray-50'
+                      PAYMENT_STATUS_CONFIG[pagoInfo.estado]?.color || 'text-muted-foreground bg-muted'
                     }`}>
                       {PAYMENT_STATUS_CONFIG[pagoInfo.estado]?.label || pagoInfo.estado}
                     </span>
                   </div>
                   {pagoInfo.estado === 'rechazado' && (
-                    <p className="text-xs text-red-500 mt-1">
+                    <p className="text-xs text-destructive mt-1">
                       El pago fue rechazado. {pedido.estado_nombre === 'pendiente' ? 'Podés reintentarlo desde la sección de Pago.' : ''}
                     </p>
                   )}
                 </div>
               )}
               {loadingPago && (
-                <div className="mt-3 pt-3 border-t border-gray-100">
-                  <p className="text-xs text-gray-400">Cargando estado del pago...</p>
+                <div className="mt-3 pt-3 border-t border-border">
+                  <p className="text-xs text-muted-foreground">Cargando estado del pago...</p>
                 </div>
               )}
             </div>
@@ -287,14 +287,14 @@ export default function OrderDetailPage() {
           {/* Pago */}
           {pedido.estado_nombre === 'pendiente' && (
             <Card className="p-5">
-              <h2 className="font-semibold text-gray-800 mb-3">Pago</h2>
+              <h2 className="font-semibold text-foreground mb-3">Pago</h2>
               <PaymentButton pedidoId={pedido.id} monto={pedido.total} pagoEstado={pagoInfo?.estado} />
             </Card>
           )}
 
           {/* Timeline de estados */}
           <Card className="p-5">
-            <h2 className="font-semibold text-gray-800 mb-4">Estado del Pedido</h2>
+            <h2 className="font-semibold text-foreground mb-4">Estado del Pedido</h2>
             <div className="relative">
               {pedido.historial_estados.length > 0 ? (
                 <div className="space-y-4">
@@ -307,21 +307,21 @@ export default function OrderDetailPage() {
                         )}
                       </div>
                       <div className="pb-4">
-                        <p className="font-medium text-sm text-gray-800">
+                        <p className="font-medium text-sm text-foreground">
                           {STATUS_LABELS[h.estado_nombre] || h.estado_nombre}
                         </p>
-                        <p className="text-xs text-gray-400">
+                        <p className="text-xs text-muted-foreground">
                           {new Date(h.fecha_cambio).toLocaleString('es-AR')}
                         </p>
                         {h.notas && (
-                          <p className="text-xs text-gray-500 mt-0.5">{h.notas}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{h.notas}</p>
                         )}
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-gray-400">Sin historial disponible</p>
+                <p className="text-sm text-muted-foreground">Sin historial disponible</p>
               )}
             </div>
           </Card>

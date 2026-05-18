@@ -11,6 +11,12 @@ interface CategoriaOption {
   subcategorias: CategoriaOption[]
 }
 
+interface IngredienteOption {
+  id: number
+  nombre: string
+  alergenos: string | null
+}
+
 export default function CatalogoPage() {
   const [products, setProducts] = useState<ProductCardItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -18,12 +24,15 @@ export default function CatalogoPage() {
   const [page, setPage] = useState(1)
   const [limit] = useState(12)
   const [categorias, setCategorias] = useState<CategoriaOption[]>([])
+  const [ingredientes, setIngredientes] = useState<IngredienteOption[]>([])
   const addToast = useUIStore((s) => s.addToast)
 
   // Filters
   const [busqueda, setBusqueda] = useState('')
   const [categoriaId, setCategoriaId] = useState<number | undefined>(undefined)
-  const [excluirAlergenos, setExcluirAlergenos] = useState('')
+  const [alergenosSeleccionados, setAlergenosSeleccionados] = useState<Set<number>>(new Set())
+
+  const excluirAlergenos = Array.from(alergenosSeleccionados).join(',')
 
   const fetchProducts = useCallback(async () => {
     setLoading(true)
@@ -52,9 +61,19 @@ export default function CatalogoPage() {
     }
   }, [])
 
+  const fetchIngredientes = useCallback(async () => {
+    try {
+      const res = await api.get('/ingredientes/')
+      setIngredientes(res.data.items || [])
+    } catch {
+      // Non-critical
+    }
+  }, [])
+
   useEffect(() => {
     fetchCategorias()
-  }, [fetchCategorias])
+    fetchIngredientes()
+  }, [fetchCategorias, fetchIngredientes])
 
   useEffect(() => {
     fetchProducts()
@@ -64,6 +83,18 @@ export default function CatalogoPage() {
     e.preventDefault()
     setPage(1)
     fetchProducts()
+  }
+
+  const toggleAlergeno = (id: number) => {
+    setAlergenosSeleccionados((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
   }
 
   const totalPages = Math.ceil(total / limit)
@@ -77,12 +108,20 @@ export default function CatalogoPage() {
     return result
   }
 
+  // Agrupar ingredientes por tipo de alérgeno
+  const alergenosAgrupados = ingredientes.reduce<Record<string, IngredienteOption[]>>((acc, ing) => {
+    const grupo = ing.alergenos ?? 'otros'
+    if (!acc[grupo]) acc[grupo] = []
+    acc[grupo].push(ing)
+    return acc
+  }, {})
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">Catálogo de Productos</h1>
-        <p className="text-gray-500 mt-1">
+        <h1 className="text-3xl font-bold text-foreground">Catálogo de Productos</h1>
+        <p className="text-muted-foreground mt-1">
           {total > 0 ? `${total} producto${total !== 1 ? 's' : ''} disponible${total !== 1 ? 's' : ''}` : 'Explorá nuestros productos'}
         </p>
       </div>
@@ -96,7 +135,7 @@ export default function CatalogoPage() {
         />
         <div>
           <select
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus-visible:ring-ring"
             value={categoriaId ?? ''}
             onChange={(e) => setCategoriaId(e.target.value ? Number(e.target.value) : undefined)}
           >
@@ -108,19 +147,55 @@ export default function CatalogoPage() {
             ))}
           </select>
         </div>
-        <Input
-          placeholder="Excluir alérgenos (IDs, ej: 1,2,3)"
-          value={excluirAlergenos}
-          onChange={(e) => setExcluirAlergenos(e.target.value)}
-        />
+        <div>
+          <div className="relative">
+            <div className="w-full rounded-lg border border-border px-3 py-2 text-sm bg-background cursor-pointer"
+                 onClick={() => document.getElementById('alergenos-dropdown')?.classList.toggle('hidden')}>
+              <span className={alergenosSeleccionados.size === 0 ? 'text-muted-foreground' : 'text-foreground'}>
+                {alergenosSeleccionados.size === 0
+                  ? 'Excluir alérgenos...'
+                  : `${alergenosSeleccionados.size} seleccionado${alergenosSeleccionados.size !== 1 ? 's' : ''}`}
+              </span>
+              <span className="float-right mt-0.5 text-muted-foreground">▾</span>
+            </div>
+            <div id="alergenos-dropdown"
+                 className="hidden absolute z-20 mt-1 w-full bg-card border border-border rounded-lg shadow-lg max-h-60 overflow-y-auto">
+              {ingredientes.length === 0 ? (
+                <div className="p-3 text-sm text-muted-foreground">Cargando...</div>
+              ) : (
+                Object.entries(alergenosAgrupados).map(([grupo, ings]) => (
+                  <div key={grupo}>
+                    <div className="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider bg-muted/30">
+                      {grupo}
+                    </div>
+                    {ings.map((ing) => (
+                      <label
+                        key={ing.id}
+                        className="flex items-center gap-2 px-3 py-1.5 text-sm text-foreground hover:bg-accent cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={alergenosSeleccionados.has(ing.id)}
+                          onChange={() => toggleAlergeno(ing.id)}
+                          className="rounded border-border text-primary focus:ring-ring"
+                        />
+                        {ing.nombre}
+                      </label>
+                    ))}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
         <Button type="submit">Filtrar</Button>
       </form>
 
       {/* Results */}
       {loading ? (
-        <div className="text-center py-12 text-gray-500">Cargando productos...</div>
+        <div className="text-center py-12 text-muted-foreground">Cargando productos...</div>
       ) : products.length === 0 ? (
-        <div className="text-center py-12 text-gray-400">
+        <div className="text-center py-12 text-muted-foreground">
           <p className="text-lg mb-2">No se encontraron productos</p>
           <p className="text-sm">Probá con otros filtros o términos de búsqueda</p>
         </div>
@@ -156,8 +231,8 @@ export default function CatalogoPage() {
                       onClick={() => setPage(pageNum)}
                       className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
                         pageNum === page
-                          ? 'bg-green-600 text-white'
-                          : 'text-gray-600 hover:bg-gray-100'
+                          ? 'bg-primary text-white'
+                          : 'text-muted-foreground hover:bg-accent'
                       }`}
                     >
                       {pageNum}

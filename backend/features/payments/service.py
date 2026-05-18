@@ -55,12 +55,16 @@ def _crear_preferencia_mp(monto: float, titulo: str, idempotency_key: str,
             ],
             "external_reference": str(pedido_id),
             "back_urls": back_urls,
-            "auto_return": "approved",
             "notification_url": os.getenv(
                 "MP_WEBHOOK_URL",
                 f"{os.getenv('VITE_API_URL', 'http://localhost:8000')}/api/v1/pagos/webhook"
             ),
         }
+        # NOTA: auto_return: "approved" requiere HTTPS en back_urls.
+        # Con credenciales APP_USR (producción), MP rechaza URLs HTTP.
+        # En desarrollo usamos HTTP, así que lo omitimos.
+        # En producción con HTTPS, agregar:
+        #   "auto_return": "approved",
 
         result = sdk.preference().create(preference_data)
 
@@ -322,6 +326,84 @@ class PaymentService:
             estado=pago.estado,
             disponible=pago.estado != "aprobado",
             pago=PagoResponse.model_validate(pago),
+        )
+
+    # ── Confirmar post-redirect ───────────────────────────────
+
+    def confirmar_pago(self, pedido_id: int, payment_id: int,
+                       usuario_id: int, es_admin: bool = False) -> PagoEstadoResponse:
+        """
+        Confirma/verifica un pago después del redirect desde MP.
+        Consulta el estado REAL en MP y actualiza la BD.
+        Esto reemplaza la necesidad del webhook en desarrollo local.
+        """
+        # Validar pedido
+        pedido = self._session.get(Pedido, pedido_id)
+        if not pedido:
+            raise NotFoundException("Pedido", pedido_id)
+
+        if not es_admin and pedido.usuario_id != usuario_id:
+            raise ForbiddenException("El pedido no pertenece al usuario autenticado")
+
+        # Consultar estado real en MP
+        try:
+            mp_info = _consultar_pago_mp(payment_id)
+        except RuntimeError as e:
+            raise BadRequestException(f"Error al consultar pago en MercadoPago: {str(e)}")
+
+        estado_mp = mp_info.get("mp_status")
+        estado_detail = mp_info.get("mp_status_detail")
+
+        # Mapear estado de MP a estado interno
+        if estado_mp == "approved":
+            nuevo_estado = "aprobado"
+        elif estado_mp in ("rejected", "cancelled", "refunded", "charged_back"):
+            nuevo_estado = "rechazado"
+        elif estado_mp in ("pending", "in_process", "authorized"):
+            nuevo_estado = "pendiente"
+        else:
+            logger.warning("Estado MP no mapeado en confirmación: %s", estado_mp)
+            nuevo_estado = "pendiente"
+
+        # Buscar el pago en BD: primero por mp_payment_id, después por pedido
+        pago = self._session.exec(
+            select(Pago).where(Pago.mp_payment_id == payment_id)
+        ).first()
+
+        if not pago:
+            if mp_info.get("mp_merchant_order_id"):
+                pago = self._session.exec(
+                    select(Pago).where(
+                        Pago.mp_merchant_order_id == mp_info["mp_merchant_order_id"]
+                    )
+                ).first()
+
+        if not pago:
+            pago = self._uow.pagos.get_ultimo_by_pedido(pedido_id)
+
+        if pago:
+            # Actualizar datos del pago
+            pago.mp_payment_id = payment_id
+            pago.mp_status = estado_mp
+            pago.mp_status_detail = estado_detail
+            pago.mp_merchant_order_id = mp_info.get("mp_merchant_order_id")
+            pago.estado = nuevo_estado
+            pago.updated_at = datetime.utcnow()
+
+            if nuevo_estado == "aprobado":
+                self._confirmar_pedido(pedido_id)
+
+            self._session.flush()
+
+            logger.info(
+                "Pago %s confirmado post-redirect: estado=%s, mp_status=%s",
+                pago.id, nuevo_estado, estado_mp,
+            )
+
+        return PagoEstadoResponse(
+            estado=nuevo_estado,
+            disponible=nuevo_estado != "aprobado",
+            pago=PagoResponse.model_validate(pago) if pago else None,
         )
 
     # ── Reintentar pago ───────────────────────────────────────

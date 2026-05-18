@@ -3,7 +3,7 @@ __pycache__/
 *.py[cod]
 *.pyo
 .venv/
-venv/
+venv/           # <- cubre SDK de Mercado Pago (backend/venv/Lib/site-packages/mercadopago/)
 env/
 *.egg-info/
 dist/

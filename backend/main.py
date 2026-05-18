@@ -1,3 +1,6 @@
+import os
+from dotenv import load_dotenv
+
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
@@ -25,6 +28,8 @@ from config import get_settings
 
 
 def create_app() -> FastAPI:
+    # Cargar .env en os.environ para que os.getenv() funcione en todo el proyecto
+    load_dotenv()
     settings = get_settings()
     app = FastAPI(
         title="FoodStore API",

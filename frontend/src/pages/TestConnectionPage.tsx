@@ -22,17 +22,17 @@ export function TestConnection() {
   return (
     <div className="p-4 bg-white rounded-lg shadow">
       <h2 className="text-lg font-semibold mb-2">🔗 Prueba de Conexión Frontend → Backend</h2>
-      {status === 'loading' && <p className="text-gray-500">⏳ Probando conexión...</p>}
+      {status === 'loading' && <p className="text-muted-foreground">⏳ Probando conexión...</p>}
       {status === 'success' && (
-        <div className="text-green-600">
+        <div className="text-primary">
           <p className="font-medium">✅ {message}</p>
-          <p className="text-sm text-gray-500 mt-1">La aplicación está funcionando correctamente</p>
+          <p className="text-sm text-muted-foreground mt-1">La aplicación está funcionando correctamente</p>
         </div>
       )}
       {status === 'error' && (
-        <div className="text-red-600">
+        <div className="text-destructive">
           <p className="font-medium">❌ Error de conexión</p>
-          <p className="text-sm text-gray-500 mt-1">{message}</p>
+          <p className="text-sm text-muted-foreground mt-1">{message}</p>
         </div>
       )}
     </div>

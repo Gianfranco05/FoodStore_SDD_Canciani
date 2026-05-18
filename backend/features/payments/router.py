@@ -5,7 +5,7 @@ from features.auth.dependencies import get_current_user
 from features.auth.models import Usuario
 from features.payments.schemas import (
     PagoCreateRequest, PagoCrearResponse,
-    PagoEstadoResponse,
+    PagoEstadoResponse, ConfirmarPagoRequest,
 )
 from features.payments.service import PaymentService
 from features.payments.dependencies import get_payment_service
@@ -73,6 +73,30 @@ async def consultar_pago(
     ]
     return service.consultar_pago(
         pedido_id=pedido_id,
+        usuario_id=current_user.id,
+        es_admin=es_admin,
+    )
+
+
+@router.post("/confirmar", response_model=PagoEstadoResponse)
+async def confirmar_pago(
+    data: ConfirmarPagoRequest,
+    current_user: Usuario = Depends(get_current_user),
+    service: PaymentService = Depends(get_payment_service),
+):
+    """
+    Confirma/verifica un pago después del redirect desde MercadoPago.
+    Consulta el estado REAL del pago en MP usando el payment_id
+    que MP pasa como query param en las back_urls.
+    Actualiza la BD si el pago fue aprobado.
+    Esto evita depender del webhook en desarrollo local.
+    """
+    es_admin = current_user.es_superadmin or "admin" in [
+        r.rol.nombre for r in (current_user.roles or []) if r.rol
+    ]
+    return service.confirmar_pago(
+        pedido_id=data.pedido_id,
+        payment_id=data.payment_id,
         usuario_id=current_user.id,
         es_admin=es_admin,
     )

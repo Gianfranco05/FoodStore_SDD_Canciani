@@ -52,6 +52,12 @@ class PagoWebhookRequest(BaseModel):
         extra = "allow"
 
 
+class ConfirmarPagoRequest(BaseModel):
+    """Solicitud para confirmar un pago post-redirect desde MP."""
+    pedido_id: int = Field(..., description="ID del pedido")
+    payment_id: int = Field(..., description="ID del pago en MercadoPago (viene en query params del redirect)")
+
+
 class PagoEstadoResponse(BaseModel):
     """Respuesta simple con el estado del pago."""
     estado: Optional[str] = None

@@ -81,25 +81,25 @@ export default function OrdersPage() {
   }, [fetchOrders])
 
   if (loading) {
-    return <div className="p-8 text-center text-gray-500">Cargando pedidos...</div>
+    return <div className="p-8 text-center text-muted-foreground">Cargando pedidos...</div>
   }
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Mis Pedidos</h1>
-        <p className="text-sm text-gray-500 mt-1">Historial de tus pedidos realizados</p>
+        <h1 className="text-2xl font-bold text-foreground">Mis Pedidos</h1>
+        <p className="text-sm text-muted-foreground mt-1">Historial de tus pedidos realizados</p>
       </div>
 
       {!data || data.items.length === 0 ? (
         <div className="text-center py-16">
-          <div className="text-gray-300 mb-4">
+          <div className="text-muted-foreground mb-4">
             <svg className="w-20 h-20 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
           </div>
-          <p className="text-lg text-gray-500 mb-2">No tenés pedidos todavía</p>
-          <p className="text-sm text-gray-400 mb-6">Agregá productos al carrito y realizá tu primer pedido</p>
+          <p className="text-lg text-muted-foreground mb-2">No tenés pedidos todavía</p>
+          <p className="text-sm text-muted-foreground mb-6">Agregá productos al carrito y realizá tu primer pedido</p>
           <Link to="/catalogo">
             <Button>Ir al Catálogo</Button>
           </Link>
@@ -112,14 +112,14 @@ export default function OrdersPage() {
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <span className="font-semibold text-gray-800">
+                      <span className="font-semibold text-foreground">
                         Pedido #{pedido.id}
                       </span>
-                      <span className={`text-xs px-2.5 py-1 rounded-full border font-medium ${STATUS_COLORS[pedido.estado_nombre] || 'bg-gray-100 text-gray-600'}`}>
+                      <span className={`text-xs px-2.5 py-1 rounded-full border font-medium ${STATUS_COLORS[pedido.estado_nombre] || 'bg-muted text-muted-foreground'}`}>
                         {STATUS_LABELS[pedido.estado_nombre] || pedido.estado_nombre}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-muted-foreground">
                       {new Date(pedido.fecha_pedido).toLocaleDateString('es-AR', {
                         year: 'numeric',
                         month: 'long',
@@ -128,7 +128,7 @@ export default function OrdersPage() {
                         minute: '2-digit',
                       })}
                     </p>
-                    <p className="text-sm text-gray-600 mt-1">
+                    <p className="text-sm text-muted-foreground mt-1">
                       {pedido.detalles?.length || 0} producto{(pedido.detalles?.length || 0) !== 1 ? 's' : ''}
                       {pedido.detalles && pedido.detalles.length > 0 && (
                         <>: {pedido.detalles.map((d) => d.nombre_snapshot).join(', ').slice(0, 80)}...</>
@@ -136,8 +136,8 @@ export default function OrdersPage() {
                     </p>
                   </div>
                   <div className="text-right ml-4">
-                    <p className="font-bold text-green-600">${pedido.total.toFixed(2)}</p>
-                    <svg className="w-5 h-5 text-gray-400 mt-2 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <p className="font-bold text-primary">${pedido.total.toFixed(2)}</p>
+                    <svg className="w-5 h-5 text-muted-foreground mt-2 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </div>

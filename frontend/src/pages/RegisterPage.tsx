@@ -67,11 +67,11 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md p-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-green-600">FoodStore</h1>
-          <p className="text-gray-500 mt-2">Crear tu cuenta</p>
+          <h1 className="text-3xl font-bold text-primary">FoodStore</h1>
+          <p className="text-muted-foreground mt-2">Crear tu cuenta</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -112,7 +112,7 @@ export default function RegisterPage() {
           />
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3">
+            <div className="bg-destructive/10 border border-destructive/20 text-destructive text-sm rounded-lg p-3">
               {error}
             </div>
           )}
@@ -122,9 +122,9 @@ export default function RegisterPage() {
           </Button>
         </form>
 
-        <p className="text-center text-sm text-gray-500 mt-6">
+        <p className="text-center text-sm text-muted-foreground mt-6">
           ¿Ya tenés cuenta?{' '}
-          <Link to="/login" className="text-green-600 hover:text-green-700 font-medium">
+          <Link to="/login" className="text-primary hover:text-primary/90 font-medium">
             Iniciar Sesión
           </Link>
         </p>

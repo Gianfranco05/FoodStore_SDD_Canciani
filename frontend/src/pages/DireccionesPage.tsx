@@ -130,14 +130,14 @@ export default function DireccionesPage() {
     }
   }
 
-  if (loading) return <div className="p-8 text-center text-gray-500">Cargando direcciones...</div>
+  if (loading) return <div className="p-8 text-center text-muted-foreground">Cargando direcciones...</div>
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Mis Direcciones</h1>
-          <p className="text-sm text-gray-500 mt-1">Gestioná tus direcciones de entrega</p>
+          <h1 className="text-2xl font-bold text-foreground">Mis Direcciones</h1>
+          <p className="text-sm text-muted-foreground mt-1">Gestioná tus direcciones de entrega</p>
         </div>
         <Button onClick={openCreate}>+ Nueva Dirección</Button>
       </div>
@@ -161,12 +161,12 @@ export default function DireccionesPage() {
               </div>
               <Input label="Código Postal *" value={form.codigo_postal} onChange={(e) => setForm({ ...form, codigo_postal: e.target.value })} required />
               <Input label="Referencias" value={form.referencias} onChange={(e) => setForm({ ...form, referencias: e.target.value })} placeholder="Ej: Depto 3, entre calle X y Y" />
-              <label className="flex items-center gap-2 text-sm text-gray-700">
+              <label className="flex items-center gap-2 text-sm text-foreground">
                 <input
                   type="checkbox"
                   checked={form.es_default}
                   onChange={(e) => setForm({ ...form, es_default: e.target.checked })}
-                  className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                  className="rounded border-border text-primary focus-visible:ring-ring"
                 />
                 Establecer como dirección predeterminada
               </label>
@@ -183,32 +183,32 @@ export default function DireccionesPage() {
 
       {/* List */}
       {direcciones.length === 0 ? (
-        <div className="text-center py-12 text-gray-400">
+        <div className="text-center py-12 text-muted-foreground">
           <p className="text-lg mb-2">No tenés direcciones guardadas</p>
           <p className="text-sm">Agregá una dirección para recibir pedidos</p>
         </div>
       ) : (
         <div className="space-y-4">
           {direcciones.map((dir) => (
-            <Card key={dir.id} className={`p-5 ${dir.es_default ? 'ring-2 ring-green-500' : ''}`}>
+            <Card key={dir.id} className={`p-5 ${dir.es_default ? 'ring-2 ring-ring' : ''}`}>
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold text-gray-800">{dir.nombre}</h3>
+                    <h3 className="font-semibold text-foreground">{dir.nombre}</h3>
                     {dir.es_default && (
-                      <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
+                      <span className="text-xs bg-green-100 text-primary px-2 py-0.5 rounded-full font-medium">
                         Predeterminada
                       </span>
                     )}
                   </div>
-                  <p className="text-gray-600 text-sm">
+                  <p className="text-muted-foreground text-sm">
                     {dir.calle} {dir.numero}
                   </p>
-                  <p className="text-gray-500 text-sm">
+                  <p className="text-muted-foreground text-sm">
                     {dir.ciudad}{dir.provincia ? `, ${dir.provincia}` : ''} - CP: {dir.codigo_postal}
                   </p>
                   {dir.referencias && (
-                    <p className="text-gray-400 text-xs mt-1">{dir.referencias}</p>
+                    <p className="text-muted-foreground text-xs mt-1">{dir.referencias}</p>
                   )}
                 </div>
                 <div className="flex gap-1 ml-4">

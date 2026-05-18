@@ -111,18 +111,18 @@ export default function PedidosPage() {
   }
 
   if (loading) {
-    return <div className="p-8 text-center text-gray-500">Cargando pedidos...</div>
+    return <div className="p-8 text-center text-muted-foreground">Cargando pedidos...</div>
   }
 
   return (
     <div className="px-4 py-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Gestión de Pedidos</h1>
-        <p className="text-sm text-gray-500 mt-1">Administrá el estado de todos los pedidos</p>
+        <h1 className="text-2xl font-bold text-foreground">Gestión de Pedidos</h1>
+        <p className="text-sm text-muted-foreground mt-1">Administrá el estado de todos los pedidos</p>
       </div>
 
       {!data || data.items.length === 0 ? (
-        <div className="text-center py-16 text-gray-400">
+        <div className="text-center py-16 text-muted-foreground">
           <p className="text-lg">No hay pedidos registrados</p>
         </div>
       ) : (
@@ -134,15 +134,15 @@ export default function PedidosPage() {
                 <div className="flex items-start justify-between flex-wrap gap-4">
                   <div className="flex-1 min-w-[200px]">
                     <div className="flex items-center gap-3 mb-1">
-                      <span className="font-semibold text-gray-800">Pedido #{pedido.id}</span>
-                      <span className={`text-xs px-2.5 py-1 rounded-full border font-medium ${STATUS_COLORS[pedido.estado_nombre] || 'bg-gray-100 text-gray-600'}`}>
+                      <span className="font-semibold text-foreground">Pedido #{pedido.id}</span>
+                      <span className={`text-xs px-2.5 py-1 rounded-full border font-medium ${STATUS_COLORS[pedido.estado_nombre] || 'bg-muted text-muted-foreground'}`}>
                         {STATUS_LABELS[pedido.estado_nombre] || pedido.estado_nombre}
                       </span>
                     </div>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-muted-foreground">
                       Usuario #{pedido.usuario_id} — {new Date(pedido.fecha_pedido).toLocaleString('es-AR')}
                     </p>
-                    <p className="text-sm text-gray-600 mt-1">
+                    <p className="text-sm text-muted-foreground mt-1">
                       {pedido.detalles?.length || 0} producto{(pedido.detalles?.length || 0) !== 1 ? 's' : ''}
                       {pedido.detalles && pedido.detalles.length > 0 && (
                         <>: {pedido.detalles.slice(0, 3).map((d) => d.nombre_snapshot).join(', ')}{pedido.detalles.length > 3 ? '...' : ''}</>
@@ -151,7 +151,7 @@ export default function PedidosPage() {
                   </div>
 
                   <div className="text-right">
-                    <p className="font-bold text-green-600 text-lg">${pedido.total.toFixed(2)}</p>
+                    <p className="font-bold text-primary text-lg">${pedido.total.toFixed(2)}</p>
                   </div>
 
                   {nextActions.length > 0 && (

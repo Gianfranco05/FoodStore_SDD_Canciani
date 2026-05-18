@@ -230,14 +230,14 @@ export default function ProductosPage() {
     }
   }
 
-  if (loading) return <div className="p-8 text-center text-gray-500">Cargando productos...</div>
+  if (loading) return <div className="p-8 text-center text-muted-foreground">Cargando productos...</div>
 
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Productos</h1>
-          <p className="text-sm text-gray-500 mt-1">Gestión de productos del menú ({total} registros)</p>
+          <h1 className="text-2xl font-bold text-foreground">Productos</h1>
+          <p className="text-sm text-muted-foreground mt-1">Gestión de productos del menú ({total} registros)</p>
         </div>
         <Button onClick={openCreate}>+ Nuevo Producto</Button>
       </div>
@@ -250,8 +250,8 @@ export default function ProductosPage() {
             <div className="space-y-4">
               <Input label="Nombre *" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} required />
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1">Descripción</label>
-                <textarea className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" rows={3} value={form.descripcion} onChange={(e) => setForm({ ...form, descripcion: e.target.value })} />
+                <label className="text-sm font-medium text-foreground block mb-1">Descripción</label>
+                <textarea className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring" rows={3} value={form.descripcion} onChange={(e) => setForm({ ...form, descripcion: e.target.value })} />
               </div>
               <Input label="Precio *" type="number" step="0.01" min="0" value={form.precio} onChange={(e) => setForm({ ...form, precio: e.target.value })} required />
               <Input label="URL de imagen" value={form.imagen_url} onChange={(e) => setForm({ ...form, imagen_url: e.target.value })} />
@@ -277,7 +277,7 @@ export default function ProductosPage() {
             <h2 className="text-xl font-bold mb-4">Asignar Categorías</h2>
             <div className="space-y-2 max-h-60 overflow-y-auto">
               {allCategories.map((cat) => (
-                <label key={cat.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
+                <label key={cat.id} className="flex items-center gap-2 p-2 hover:bg-accent rounded-lg cursor-pointer">
                   <input
                     type="checkbox"
                     checked={selectedCatIds.includes(cat.id)}
@@ -285,12 +285,12 @@ export default function ProductosPage() {
                       if (e.target.checked) setSelectedCatIds([...selectedCatIds, cat.id])
                       else setSelectedCatIds(selectedCatIds.filter((id) => id !== cat.id))
                     }}
-                    className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                    className="rounded border-border text-primary focus-visible:ring-ring"
                   />
-                  <span className="text-sm text-gray-700">{cat.nombre}</span>
+                  <span className="text-sm text-foreground">{cat.nombre}</span>
                 </label>
               ))}
-              {allCategories.length === 0 && <p className="text-sm text-gray-400">No hay categorías disponibles</p>}
+              {allCategories.length === 0 && <p className="text-sm text-muted-foreground">No hay categorías disponibles</p>}
             </div>
             <div className="flex justify-end gap-3 mt-6">
               <Button variant="outline" onClick={() => setShowCategories(null)}>Cancelar</Button>
@@ -309,7 +309,7 @@ export default function ProductosPage() {
               {allIngredients.map((ing) => {
                 const existing = selectedIngs.find((i) => i.ingrediente_id === ing.id)
                 return (
-                  <div key={ing.id} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg">
+                  <div key={ing.id} className="flex items-center gap-3 p-2 hover:bg-accent rounded-lg">
                     <input
                       type="checkbox"
                       checked={!!existing}
@@ -317,9 +317,9 @@ export default function ProductosPage() {
                         if (e.target.checked) setSelectedIngs([...selectedIngs, { ingrediente_id: ing.id, cantidad: 1 }])
                         else setSelectedIngs(selectedIngs.filter((i) => i.ingrediente_id !== ing.id))
                       }}
-                      className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                      className="rounded border-border text-primary focus-visible:ring-ring"
                     />
-                    <span className="text-sm text-gray-700 flex-1">{ing.nombre}</span>
+                    <span className="text-sm text-foreground flex-1">{ing.nombre}</span>
                     {existing && (
                       <input
                         type="number"
@@ -327,13 +327,13 @@ export default function ProductosPage() {
                         step="0.5"
                         value={existing.cantidad}
                         onChange={(e) => setSelectedIngs(selectedIngs.map((i) => i.ingrediente_id === ing.id ? { ...i, cantidad: parseFloat(e.target.value) || 0 } : i))}
-                        className="w-20 rounded border border-gray-300 px-2 py-1 text-sm text-right focus:outline-none focus:ring-2 focus:ring-green-500"
+                        className="w-20 rounded border border-border px-2 py-1 text-sm text-right focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                       />
                     )}
                   </div>
                 )
               })}
-              {allIngredients.length === 0 && <p className="text-sm text-gray-400">No hay ingredientes disponibles</p>}
+              {allIngredients.length === 0 && <p className="text-sm text-muted-foreground">No hay ingredientes disponibles</p>}
             </div>
             <div className="flex justify-end gap-3 mt-6">
               <Button variant="outline" onClick={() => setShowIngredients(null)}>Cancelar</Button>
@@ -350,9 +350,9 @@ export default function ProductosPage() {
             <h2 className="text-xl font-bold mb-4">Actualizar Stock</h2>
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1">Operación</label>
+                <label className="text-sm font-medium text-foreground block mb-1">Operación</label>
                 <select
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                  className="w-full rounded-lg border border-border px-3 py-2 text-sm"
                   value={stockOp}
                   onChange={(e) => setStockOp(e.target.value as any)}
                 >
@@ -379,7 +379,7 @@ export default function ProductosPage() {
 
       {/* Table */}
       {items.length === 0 ? (
-        <div className="text-center py-12 text-gray-400">
+        <div className="text-center py-12 text-muted-foreground">
           <p className="text-lg mb-2">No hay productos todavía</p>
           <p className="text-sm">Creá el primer producto para comenzar</p>
         </div>
@@ -387,34 +387,34 @@ export default function ProductosPage() {
         <Card className="overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-muted border-b border-border">
                 <tr>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Producto</th>
-                  <th className="text-right px-4 py-3 font-medium text-gray-600">Precio</th>
-                  <th className="text-right px-4 py-3 font-medium text-gray-600">Stock</th>
-                  <th className="text-center px-4 py-3 font-medium text-gray-600">Estado</th>
-                  <th className="text-center px-4 py-3 font-medium text-gray-600">Categorías</th>
-                  <th className="text-center px-4 py-3 font-medium text-gray-600">Ingredientes</th>
-                  <th className="text-right px-4 py-3 font-medium text-gray-600">Acciones</th>
+                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Producto</th>
+                  <th className="text-right px-4 py-3 font-medium text-muted-foreground">Precio</th>
+                  <th className="text-right px-4 py-3 font-medium text-muted-foreground">Stock</th>
+                  <th className="text-center px-4 py-3 font-medium text-muted-foreground">Estado</th>
+                  <th className="text-center px-4 py-3 font-medium text-muted-foreground">Categorías</th>
+                  <th className="text-center px-4 py-3 font-medium text-muted-foreground">Ingredientes</th>
+                  <th className="text-right px-4 py-3 font-medium text-muted-foreground">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-border">
                 {items.map((item) => (
-                  <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                  <tr key={item.id} className="hover:bg-accent transition-colors">
                     <td className="px-4 py-3">
                       <div>
-                        <p className="font-medium text-gray-800">{item.nombre}</p>
-                        {item.descripcion && <p className="text-xs text-gray-400 truncate max-w-[200px]">{item.descripcion}</p>}
+                        <p className="font-medium text-foreground">{item.nombre}</p>
+                        {item.descripcion && <p className="text-xs text-muted-foreground truncate max-w-[200px]">{item.descripcion}</p>}
                       </div>
                     </td>
                     <td className="px-4 py-3 text-right font-medium">${item.precio.toFixed(2)}</td>
                     <td className="px-4 py-3 text-right">
-                      <span className={`font-medium ${item.stock <= 0 ? 'text-red-600' : item.stock < 10 ? 'text-yellow-600' : 'text-green-600'}`}>
+                      <span className={`font-medium ${item.stock <= 0 ? 'text-destructive' : item.stock < 10 ? 'text-yellow-600' : 'text-primary'}`}>
                         {item.stock}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <span className={`text-xs font-medium px-2 py-1 rounded-full ${item.activo ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                      <span className={`text-xs font-medium px-2 py-1 rounded-full ${item.activo ? 'bg-primary/15 text-foreground' : 'bg-muted text-muted-foreground'}`}>
                         {item.activo ? 'Activo' : 'Inactivo'}
                       </span>
                     </td>
@@ -441,9 +441,9 @@ export default function ProductosPage() {
             </table>
           </div>
           {total > limit && (
-            <div className="flex justify-center gap-2 p-4 border-t border-gray-100">
+            <div className="flex justify-center gap-2 p-4 border-t border-border">
               <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>Anterior</Button>
-              <span className="text-sm text-gray-500 self-center">Página {page} de {Math.ceil(total / limit)}</span>
+              <span className="text-sm text-muted-foreground self-center">Página {page} de {Math.ceil(total / limit)}</span>
               <Button variant="outline" size="sm" disabled={page * limit >= total} onClick={() => setPage(page + 1)}>Siguiente</Button>
             </div>
           )}

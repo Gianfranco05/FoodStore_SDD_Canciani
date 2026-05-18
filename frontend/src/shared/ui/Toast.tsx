@@ -1,8 +1,9 @@
+import { cn } from '../../lib/utils'
 import { useUIStore } from '../../stores/uiStore'
 
-const typeStyles = {
-  success: 'bg-green-50 border-green-200 text-green-800',
-  error: 'bg-red-50 border-red-200 text-red-800',
+const typeStyles: Record<string, string> = {
+  success: 'bg-primary/10 border-primary/20 text-primary',
+  error: 'bg-destructive/10 border-destructive/20 text-destructive',
   warning: 'bg-yellow-50 border-yellow-200 text-yellow-800',
   info: 'bg-blue-50 border-blue-200 text-blue-800',
 }
@@ -17,7 +18,10 @@ export function ToastContainer() {
       {toasts.map((toast) => (
         <div
           key={toast.id}
-          className={`flex items-center justify-between gap-3 px-4 py-3 rounded-lg border shadow-lg transition-all ${typeStyles[toast.type]}`}
+          className={cn(
+            'flex items-center justify-between gap-3 px-4 py-3 rounded-lg border shadow-lg transition-all',
+            typeStyles[toast.type]
+          )}
         >
           <p className="text-sm font-medium">{toast.message}</p>
           <button

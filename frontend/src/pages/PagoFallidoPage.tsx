@@ -1,27 +1,116 @@
-import { useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useParams, useSearchParams, Link } from 'react-router-dom'
 import { Button } from '../shared/ui/Button'
+import { api } from '../lib/api'
 import { usePaymentStore } from '../stores/paymentStore'
+
+type EstadoConfirmacion = 'confirmando' | 'rechazado' | 'aprobado' | 'error' | 'sin_datos'
 
 export default function PagoFallidoPage() {
   const { id } = useParams<{ id: string }>()
+  const [searchParams] = useSearchParams()
+  const [estado, setEstado] = useState<EstadoConfirmacion>('confirmando')
   const { setPaymentStatus, reset } = usePaymentStore()
+  const pedidoId = Number(id)
 
   useEffect(() => {
-    setPaymentStatus('rejected')
-    return () => reset()
-  }, [setPaymentStatus, reset])
+    const paymentId = searchParams.get('payment_id')
 
+    if (!paymentId) {
+      setPaymentStatus('rejected')
+      setEstado('sin_datos')
+      return
+    }
+
+    let cancelled = false
+
+    async function confirmar() {
+      try {
+        const res = await api.post('/pagos/confirmar', {
+          pedido_id: pedidoId,
+          payment_id: Number(paymentId),
+        })
+        const data = res.data
+
+        if (cancelled) return
+
+        if (data.estado === 'aprobado') {
+          setPaymentStatus('approved')
+          setEstado('aprobado')
+        } else {
+          setPaymentStatus('rejected')
+          setEstado('rechazado')
+        }
+      } catch {
+        if (cancelled) return
+        setEstado('sin_datos')
+      }
+    }
+
+    confirmar()
+
+    return () => {
+      cancelled = true
+      reset()
+    }
+  }, [pedidoId, searchParams, setPaymentStatus, reset])
+
+  // ── Confirmando ──
+  if (estado === 'confirmando') {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center px-4">
+        <div className="max-w-md text-center">
+          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-blue-100">
+            <svg className="h-10 w-10 animate-spin text-blue-600" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+          </div>
+          <h1 className="mb-2 text-2xl font-bold text-foreground">Verificando pago...</h1>
+          <p className="text-muted-foreground">Estamos consultando el estado del pago con MercadoPago.</p>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Sorpresa: MP dijo que sí aprobó ──
+  if (estado === 'aprobado') {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center px-4">
+        <div className="max-w-md text-center">
+          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-100">
+            <svg className="h-10 w-10 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h1 className="mb-2 text-2xl font-bold text-foreground">¡Pago exitoso!</h1>
+          <p className="mb-6 text-muted-foreground">
+            El pago para el pedido <strong>#{id}</strong> fue procesado correctamente.
+          </p>
+          <div className="flex justify-center gap-3">
+            <Link to={`/orders/${id}`}>
+              <Button>Ver pedido</Button>
+            </Link>
+            <Link to="/orders">
+              <Button variant="outline">Mis pedidos</Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Rechazado ──
   return (
     <div className="flex min-h-[60vh] items-center justify-center px-4">
       <div className="max-w-md text-center">
         <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-red-100">
-          <svg className="h-10 w-10 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="h-10 w-10 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </div>
-        <h1 className="mb-2 text-2xl font-bold text-gray-800">Pago rechazado</h1>
-        <p className="mb-6 text-gray-600">
+        <h1 className="mb-2 text-2xl font-bold text-foreground">Pago rechazado</h1>
+        <p className="mb-6 text-muted-foreground">
           El pago para el pedido <strong>#{id}</strong> no pudo ser procesado.
           Podés intentar nuevamente con otro medio de pago.
         </p>
