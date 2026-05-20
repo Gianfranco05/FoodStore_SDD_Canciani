@@ -1,9 +1,13 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo, useActionState, useRef } from 'react'
 import { api } from '../../lib/api'
-import { Button } from '../../shared/ui/Button'
-import { Input } from '../../shared/ui/Input'
-import { Card } from '../../shared/ui/Card'
+import { Badge, Button, Card, Modal, PageContainer, Pagination, TableSkeleton, ConfirmDialog } from '../../shared/ui'
+import { HelpButton } from '../../shared/ui/HelpButton'
+import { useFormModal } from '../../shared/hooks/useFormModal'
+import { useConfirmDialog } from '../../shared/hooks/useConfirmDialog'
 import { useUIStore } from '../../stores/uiStore'
+import { handleError } from '../../shared/utils/logger'
+import type { FormState } from '../../shared/types/form'
+import { helpContent } from './helpContent'
 
 interface Ingrediente {
   id: number
@@ -15,30 +19,62 @@ interface Ingrediente {
   actualizado_en?: string
 }
 
-interface IngredienteForm {
+interface IngredienteFormData {
   nombre: string
   unidad_medida: string
   alergenos: string
 }
 
-const emptyForm: IngredienteForm = {
+const emptyForm: IngredienteFormData = {
   nombre: '',
   unidad_medida: 'unidad',
   alergenos: '',
 }
+
+const ALERGENOS_COMUNES = [
+  'Lácteos',
+  'Huevo',
+  'Gluten',
+  'Maní',
+  'Frutos secos',
+  'Soja',
+  'Pescado',
+  'Sésamo',
+  'Mostaza',
+  'Sulfitos',
+]
+
+function parseAlergenos(raw: string | null | undefined): string[] {
+  if (!raw) return []
+  return raw.split(',').map((a) => a.trim()).filter(Boolean)
+}
+
+const UNIDADES = [
+  { value: 'unidad', label: 'Unidad' },
+  { value: 'gramo', label: 'Gramo (g)' },
+  { value: 'kilogramo', label: 'Kilogramo (kg)' },
+  { value: 'mililitro', label: 'Mililitro (ml)' },
+  { value: 'litro', label: 'Litro (L)' },
+  { value: 'cucharada', label: 'Cucharada' },
+  { value: 'cucharadita', label: 'Cucharadita' },
+  { value: 'taza', label: 'Taza' },
+  { value: 'porcion', label: 'Porción' },
+]
 
 export default function IngredientesPage() {
   const [items, setItems] = useState<Ingrediente[]>([])
   const [loading, setLoading] = useState(true)
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
-  const [showForm, setShowForm] = useState(false)
-  const [editingId, setEditingId] = useState<number | null>(null)
-  const [form, setForm] = useState<IngredienteForm>(emptyForm)
-  const [saving, setSaving] = useState(false)
   const addToast = useUIStore((s) => s.addToast)
 
-  const limit = 50
+  const limit = 10
+  const totalPages = Math.ceil(total / limit)
+
+  const modal = useFormModal<IngredienteFormData, Ingrediente>(emptyForm)
+  const deleteDialog = useConfirmDialog<Ingrediente>()
+  const [alergenosSeleccionados, setAlergenosSeleccionados] = useState<string[]>([])
+  const alergenosRef = useRef<HTMLInputElement>(null)
 
   const fetchItems = useCallback(async () => {
     try {
@@ -56,198 +92,412 @@ export default function IngredientesPage() {
     fetchItems()
   }, [fetchItems])
 
-  const openCreate = () => {
-    setEditingId(null)
-    setForm(emptyForm)
-    setShowForm(true)
-  }
+  const openEditModal = useCallback(
+    (item: Ingrediente) => {
+      const parsed = parseAlergenos(item.alergenos)
+      modal.openEdit(item)
+      modal.setFormData({
+        nombre: item.nombre,
+        unidad_medida: item.unidad_medida,
+        alergenos: item.alergenos || '',
+      })
+      setAlergenosSeleccionados(parsed)
+    },
+    [modal]
+  )
 
-  const openEdit = (item: Ingrediente) => {
-    setEditingId(item.id)
-    setForm({
-      nombre: item.nombre,
-      unidad_medida: item.unidad_medida,
-      alergenos: item.alergenos || '',
-    })
-    setShowForm(true)
-  }
-
-  const handleSave = async () => {
-    setSaving(true)
-    try {
-      const payload: any = { ...form }
-      if (!payload.alergenos) delete payload.alergenos
-
-      if (editingId) {
-        await api.put(`/ingredientes/${editingId}`, payload)
-        addToast('Ingrediente actualizado', 'success')
-      } else {
-        await api.post('/ingredientes/', payload)
-        addToast('Ingrediente creado', 'success')
+  const submitAction = useCallback(
+    async (_prevState: FormState<IngredienteFormData>, formData: FormData): Promise<FormState<IngredienteFormData>> => {
+      const data: IngredienteFormData = {
+        nombre: formData.get('nombre') as string,
+        unidad_medida: formData.get('unidad_medida') as string,
+        alergenos: (formData.get('alergenos') as string) || '',
       }
-      setShowForm(false)
-      fetchItems()
-    } catch (err: any) {
-      const detail = err.response?.data?.detail
-      addToast(detail || 'Error al guardar ingrediente', 'error')
-    } finally {
-      setSaving(false)
-    }
+
+      if (!data.nombre.trim()) {
+        return { errors: { nombre: 'El nombre es requerido' }, isSuccess: false }
+      }
+
+      try {
+        const payload: Record<string, unknown> = { ...data }
+        if (!payload.alergenos) delete payload.alergenos
+
+        if (modal.selectedItem) {
+          await api.put(`/ingredientes/${modal.selectedItem.id}`, payload)
+          addToast('Ingrediente actualizado', 'success')
+        } else {
+          await api.post('/ingredientes/', payload)
+          addToast('Ingrediente creado', 'success')
+        }
+        fetchItems()
+        return { isSuccess: true, message: 'Guardado correctamente' }
+      } catch (error) {
+        const message = handleError(error, 'IngredientesPage.submitAction')
+        addToast(`Error al guardar: ${message}`, 'error')
+        return { isSuccess: false, message: `Error: ${message}` }
+      }
+    },
+    [modal.selectedItem, fetchItems, addToast]
+  )
+
+  const [state, formAction, isPending] = useActionState<FormState<IngredienteFormData>, FormData>(submitAction, {
+    isSuccess: false,
+  })
+
+  if (state.isSuccess && modal.isOpen) {
+    modal.close()
+    setAlergenosSeleccionados([])
   }
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('¿Eliminar este ingrediente?')) return
+  const openCreateModal = useCallback(() => {
+    setAlergenosSeleccionados([])
+    modal.openCreate()
+  }, [modal])
+
+  const handleDelete = useCallback(async () => {
+    const item = deleteDialog.item
+    if (!item) return
+
     try {
-      await api.delete(`/ingredientes/${id}`)
+      await api.delete(`/ingredientes/${item.id}`)
       addToast('Ingrediente eliminado', 'success')
       fetchItems()
-    } catch {
-      addToast('Error al eliminar ingrediente', 'error')
+      deleteDialog.close()
+    } catch (error) {
+      const message = handleError(error, 'IngredientesPage.handleDelete')
+      addToast(`Error al eliminar: ${message}`, 'error')
     }
-  }
+  }, [deleteDialog, fetchItems, addToast])
 
-  const toggleDisponible = async (item: Ingrediente) => {
-    try {
-      await api.put(`/ingredientes/${item.id}`, { disponible: !item.disponible })
-      addToast(`Ingrediente ${item.disponible ? 'desactivado' : 'activado'}`, 'success')
-      fetchItems()
-    } catch {
-      addToast('Error al actualizar ingrediente', 'error')
-    }
-  }
+  const toggleDisponible = useCallback(
+    async (item: Ingrediente) => {
+      try {
+        await api.put(`/ingredientes/${item.id}`, { disponible: !item.disponible })
+        addToast(`Ingrediente ${item.disponible ? 'desactivado' : 'activado'}`, 'success')
+        fetchItems()
+      } catch (error) {
+        const message = handleError(error, 'IngredientesPage.toggleDisponible')
+        addToast(`Error: ${message}`, 'error')
+      }
+    },
+    [fetchItems, addToast]
+  )
 
-  if (loading) return <div className="p-8 text-center text-muted-foreground">Cargando ingredientes...</div>
+  const columns = useMemo(
+    () => [
+      {
+        key: 'nombre',
+        label: 'Nombre',
+        render: (item: Ingrediente) => <span className="font-medium">{item.nombre}</span>,
+      },
+      {
+        key: 'unidad_medida',
+        label: 'Unidad',
+        width: 'w-28',
+        render: (item: Ingrediente) => (
+          <span className="text-muted-foreground">
+            {UNIDADES.find((u) => u.value === item.unidad_medida)?.label ?? item.unidad_medida}
+          </span>
+        ),
+      },
+      {
+        key: 'alergenos',
+        label: 'Alérgenos',
+        render: (item: Ingrediente) =>
+          item.alergenos ? (
+            <div className="flex gap-1 flex-wrap">
+              {item.alergenos.split(',').map((a, i) => (
+                <span key={i} className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full">
+                  {a.trim()}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          ),
+      },
+      {
+        key: 'disponible',
+        label: 'Disponible',
+        width: 'w-28',
+        render: (item: Ingrediente) => (
+          <button
+            onClick={() => toggleDisponible(item)}
+            className="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full transition-colors"
+            aria-label={`${item.nombre}: ${item.disponible ? 'Disponible' : 'No disponible'}. Hacer clic para cambiar.`}
+          >
+            {item.disponible ? (
+              <Badge variant="success">Disponible</Badge>
+            ) : (
+              <Badge variant="danger">No disponible</Badge>
+            )}
+          </button>
+        ),
+      },
+      {
+        key: 'acciones',
+        label: 'Acciones',
+        width: 'w-28',
+        render: (item: Ingrediente) => (
+          <div className="flex items-center justify-end gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation()
+                openEditModal(item)
+              }}
+              aria-label={`Editar ${item.nombre}`}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                <path d="m15 5 4 4" />
+              </svg>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation()
+                deleteDialog.open(item)
+              }}
+              className="text-red-500 hover:text-red-700 hover:bg-red-50"
+              aria-label={`Eliminar ${item.nombre}`}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M3 6h18" />
+                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+              </svg>
+            </Button>
+          </div>
+        ),
+      },
+    ],
+    [deleteDialog, openEditModal, toggleDisponible]
+  )
+
+  if (loading) {
+    return (
+      <PageContainer title="Ingredientes" description="Gestión de ingredientes y alérgenos" helpContent={helpContent.ingredientes}>
+        <Card className="p-6">
+          <TableSkeleton rows={5} columns={5} />
+        </Card>
+      </PageContainer>
+    )
+  }
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Ingredientes</h1>
-          <p className="text-sm text-muted-foreground mt-1">Gestión de ingredientes y alérgenos ({total} registros)</p>
-        </div>
-        <Button onClick={openCreate}>+ Nuevo Ingrediente</Button>
-      </div>
-
+    <PageContainer
+      title="Ingredientes"
+      description={`Gestión de ingredientes y alérgenos (${total} registros)`}
+      helpContent={helpContent.ingredientes}
+      actions={
+        <Button onClick={openCreateModal}>+ Nuevo Ingrediente</Button>
+      }
+    >
       {/* Modal Form */}
-      {showForm && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <Card className="w-full max-w-md p-6">
-            <h2 className="text-xl font-bold mb-4">{editingId ? 'Editar' : 'Nuevo'} Ingrediente</h2>
-            <div className="space-y-4">
-              <Input
-                label="Nombre *"
-                value={form.nombre}
-                onChange={(e) => setForm({ ...form, nombre: e.target.value })}
-                required
-              />
-              <div>
-                <label className="text-sm font-medium text-foreground block mb-1">Unidad de medida *</label>
-                <select
-                  className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  value={form.unidad_medida}
-                  onChange={(e) => setForm({ ...form, unidad_medida: e.target.value })}
-                >
-                  <option value="unidad">Unidad</option>
-                  <option value="gramo">Gramo (g)</option>
-                  <option value="kilogramo">Kilogramo (kg)</option>
-                  <option value="mililitro">Mililitro (ml)</option>
-                  <option value="litro">Litro (L)</option>
-                  <option value="cucharada">Cucharada</option>
-                  <option value="cucharadita">Cucharadita</option>
-                  <option value="taza">Taza</option>
-                  <option value="porcion">Porción</option>
-                </select>
+      <Modal
+        isOpen={modal.isOpen}
+        onClose={modal.close}
+        title={modal.selectedItem ? 'Editar Ingrediente' : 'Nuevo Ingrediente'}
+        size="md"
+        footer={
+          <>
+            <Button variant="ghost" onClick={modal.close} disabled={isPending}>
+              Cancelar
+            </Button>
+            <Button type="submit" form="ingrediente-form" isLoading={isPending}>
+              {modal.selectedItem ? 'Actualizar' : 'Crear'}
+            </Button>
+          </>
+        }
+      >
+        <form id="ingrediente-form" action={formAction} className="space-y-4">
+          {/* HelpButton as first element */}
+          <div className="flex items-center gap-2 mb-2">
+            <HelpButton
+              title="Formulario de Ingrediente"
+              content={
+                <div className="space-y-3">
+                  <p>
+                    <strong>Completá los campos</strong> para crear o editar un ingrediente:
+                  </p>
+                  <ul className="list-disc pl-5 space-y-2">
+                    <li>
+                      <strong>Nombre:</strong> Nombre del ingrediente (ej: Harina de trigo).
+                    </li>
+                    <li>
+                      <strong>Unidad de medida:</strong> Cómo se mide este ingrediente.
+                    </li>
+                    <li>
+                      <strong>Alérgenos:</strong> Marcá los alérgenos que correspondan al ingrediente.
+                    </li>
+                  </ul>
+                </div>
+              }
+            />
+            <span className="text-sm text-muted-foreground">Ayuda sobre el formulario</span>
+          </div>
+
+          {/* Hidden field to track the form is open */}
+          <input type="hidden" name="modal_open" value="true" />
+
+          <div>
+            <label className="text-sm font-medium text-foreground block mb-1">
+              Nombre <span className="text-destructive">*</span>
+            </label>
+            <input
+              name="nombre"
+              defaultValue={modal.selectedItem?.nombre ?? modal.formData.nombre}
+              className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring bg-background text-foreground"
+              placeholder="Nombre del ingrediente"
+              required
+            />
+            {state.errors?.nombre && (
+              <p className="text-xs text-destructive mt-1">{state.errors.nombre}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-foreground block mb-1">
+              Unidad de medida <span className="text-destructive">*</span>
+            </label>
+            <select
+              name="unidad_medida"
+              defaultValue={modal.selectedItem?.unidad_medida ?? modal.formData.unidad_medida}
+              className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring bg-background text-foreground"
+            >
+              {UNIDADES.map((u) => (
+                <option key={u.value} value={u.value}>
+                  {u.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-foreground block mb-2">Alérgenos</label>
+            <input
+              ref={alergenosRef}
+              type="hidden"
+              name="alergenos"
+              value={alergenosSeleccionados.join(', ')}
+            />
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+              {ALERGENOS_COMUNES.map((alergeno) => {
+                const checked = alergenosSeleccionados.includes(alergeno)
+                return (
+                  <label
+                    key={alergeno}
+                    className="flex items-center gap-2 px-2 py-1 rounded hover:bg-accent cursor-pointer text-sm"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => {
+                        setAlergenosSeleccionados((prev) =>
+                          checked ? prev.filter((a) => a !== alergeno) : [...prev, alergeno]
+                        )
+                      }}
+                      className="rounded border-border text-yellow-600 focus-visible:ring-ring"
+                    />
+                    <span className="text-foreground">{alergeno}</span>
+                  </label>
+                )
+              })}
+            </div>
+            {alergenosSeleccionados.length > 0 && (
+              <div className="flex gap-1 flex-wrap mt-2">
+                {alergenosSeleccionados.map((a) => (
+                  <span key={a} className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full">
+                    {a}
+                  </span>
+                ))}
               </div>
-              <Input
-                label="Alérgenos (separados por coma)"
-                value={form.alergenos}
-                onChange={(e) => setForm({ ...form, alergenos: e.target.value })}
-                placeholder="ej: harina, leche, huevo"
-              />
-            </div>
-            <div className="flex justify-end gap-3 mt-6">
-              <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
-              <Button onClick={handleSave} disabled={saving || !form.nombre}>
-                {saving ? 'Guardando...' : editingId ? 'Actualizar' : 'Crear'}
-              </Button>
-            </div>
-          </Card>
-        </div>
-      )}
+            )}
+          </div>
+        </form>
+      </Modal>
+
+      {/* Confirm Delete Dialog */}
+      <ConfirmDialog
+        isOpen={deleteDialog.isOpen}
+        onClose={deleteDialog.close}
+        onConfirm={handleDelete}
+        title="Eliminar Ingrediente"
+        message={`¿Estás seguro de eliminar "${deleteDialog.item?.nombre}"? Esta acción no se puede deshacer.`}
+        confirmLabel="Eliminar"
+      />
 
       {/* Table */}
       {items.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          <p className="text-lg mb-2">No hay ingredientes todavía</p>
-          <p className="text-sm">Creá el primer ingrediente para comenzar</p>
-        </div>
+        <Card className="p-6">
+          <div className="text-center py-12 text-muted-foreground">
+            <p className="text-lg mb-2">No hay ingredientes todavía</p>
+            <p className="text-sm">Creá el primer ingrediente para comenzar</p>
+          </div>
+        </Card>
       ) : (
         <Card className="overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-muted border-b border-border">
                 <tr>
-                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Nombre</th>
-                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Unidad</th>
-                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Alérgenos</th>
-                  <th className="text-center px-4 py-3 font-medium text-muted-foreground">Disponible</th>
-                  <th className="text-right px-4 py-3 font-medium text-muted-foreground">Acciones</th>
+                  {columns.map((col) => (
+                    <th
+                      key={col.key}
+                      className={`text-left px-4 py-3 font-medium text-muted-foreground ${col.width ?? ''}`}
+                    >
+                      {col.label}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {items.map((item) => (
                   <tr key={item.id} className="hover:bg-accent transition-colors">
-                    <td className="px-4 py-3 font-medium text-foreground">{item.nombre}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{item.unidad_medida}</td>
-                    <td className="px-4 py-3">
-                      {item.alergenos ? (
-                        <div className="flex gap-1 flex-wrap">
-                          {item.alergenos.split(',').map((a, i) => (
-                            <span key={i} className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full">
-                              {a.trim()}
-                            </span>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <button
-                        onClick={() => toggleDisponible(item)}
-                        className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full transition-colors ${
-                          item.disponible
-                            ? 'bg-green-100 text-primary hover:bg-green-200'
-                            : 'bg-red-100 text-red-700 hover:bg-red-200'
-                        }`}
-                      >
-                        {item.disponible ? 'Disponible' : 'No disponible'}
-                      </button>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex gap-1 justify-end">
-                        <Button variant="ghost" size="sm" onClick={() => openEdit(item)}>Editar</Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleDelete(item.id)}>Eliminar</Button>
-                      </div>
-                    </td>
+                    {columns.map((col) => (
+                      <td key={col.key} className={`px-4 py-3 ${col.width ?? ''}`}>
+                        {col.render(item)}
+                      </td>
+                    ))}
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          {total > limit && (
-            <div className="flex justify-center gap-2 p-4 border-t border-border">
-              <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
-                Anterior
-              </Button>
-              <span className="text-sm text-muted-foreground self-center">Página {page}</span>
-              <Button variant="outline" size="sm" disabled={page * limit >= total} onClick={() => setPage(page + 1)}>
-                Siguiente
-              </Button>
-            </div>
-          )}
+          <Pagination
+            currentPage={page}
+            totalPages={totalPages}
+            totalItems={total}
+            itemsPerPage={limit}
+            onPageChange={setPage}
+          />
         </Card>
       )}
-    </div>
+    </PageContainer>
   )
 }

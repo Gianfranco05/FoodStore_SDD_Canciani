@@ -1,8 +1,11 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { api } from '../../lib/api'
-import { Button } from '../../shared/ui/Button'
-import { Card } from '../../shared/ui/Card'
+import { Badge, Button, Card, PageContainer, TableSkeleton, ConfirmDialog } from '../../shared/ui'
+import { useConfirmDialog } from '../../shared/hooks/useConfirmDialog'
+import { usePagination } from '../../shared/hooks/usePagination'
 import { useUIStore } from '../../stores/uiStore'
+import { handleError } from '../../shared/utils/logger'
+import { helpContent } from './helpContent'
 
 interface DetallePedido {
   id: number
@@ -22,6 +25,8 @@ interface Pedido {
   direccion_snapshot?: string | null
   fecha_pedido: string
   detalles: DetallePedido[]
+  usuario_nombre?: string
+  usuario_email?: string
 }
 
 interface PedidoListResponse {
@@ -29,14 +34,14 @@ interface PedidoListResponse {
   total: number
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  pendiente: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  confirmado: 'bg-blue-100 text-blue-800 border-blue-200',
-  en_preparacion: 'bg-indigo-100 text-indigo-800 border-indigo-200',
-  listo_para_entrega: 'bg-purple-100 text-purple-800 border-purple-200',
-  en_camino: 'bg-orange-100 text-orange-800 border-orange-200',
-  entregado: 'bg-green-100 text-green-800 border-green-200',
-  cancelado: 'bg-red-100 text-red-800 border-red-200',
+const STATUS_COLORS: Record<string, 'success' | 'danger' | 'warning' | 'info'> = {
+  pendiente: 'warning',
+  confirmado: 'info',
+  en_preparacion: 'info',
+  listo_para_entrega: 'warning',
+  en_camino: 'warning',
+  entregado: 'success',
+  cancelado: 'danger',
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -49,132 +54,233 @@ const STATUS_LABELS: Record<string, string> = {
   cancelado: 'Cancelado',
 }
 
-// Transiciones disponibles para cada estado
-const NEXT_STATES: Record<string, Array<{ nombre: string; label: string; color: string }>> = {
+// Allowed transitions: from -> to
+const ALLOWED_TRANSITIONS: Record<string, { to: string; label: string; roles: string[] }[]> = {
   pendiente: [
-    { nombre: 'confirmado', label: 'Confirmar', color: 'blue' },
-    { nombre: 'cancelado', label: 'Cancelar', color: 'red' },
+    { to: 'confirmado', label: 'Confirmar', roles: ['admin', 'cocinero'] },
+    { to: 'cancelado', label: 'Cancelar', roles: ['admin'] },
   ],
   confirmado: [
-    { nombre: 'en_preparacion', label: 'En Preparación', color: 'indigo' },
-    { nombre: 'cancelado', label: 'Cancelar', color: 'red' },
+    { to: 'en_preparacion', label: 'En Preparación', roles: ['admin', 'cocinero'] },
+    { to: 'cancelado', label: 'Cancelar', roles: ['admin'] },
   ],
   en_preparacion: [
-    { nombre: 'listo_para_entrega', label: 'Listo para Entrega', color: 'purple' },
-    { nombre: 'cancelado', label: 'Cancelar', color: 'red' },
+    { to: 'listo_para_entrega', label: 'Listo para Entrega', roles: ['admin', 'cocinero'] },
+    { to: 'cancelado', label: 'Cancelar', roles: ['admin'] },
   ],
   listo_para_entrega: [
-    { nombre: 'en_camino', label: 'En Camino', color: 'orange' },
+    { to: 'en_camino', label: 'En Camino', roles: ['admin', 'repartidor'] },
   ],
   en_camino: [
-    { nombre: 'entregado', label: 'Marcar Entregado', color: 'green' },
+    { to: 'entregado', label: 'Entregar', roles: ['admin', 'repartidor'] },
   ],
-  entregado: [],
-  cancelado: [],
+}
+
+function formatCurrency(n: number) {
+  return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 }).format(n)
 }
 
 export default function PedidosPage() {
-  const [data, setData] = useState<PedidoListResponse | null>(null)
+  const [items, setItems] = useState<Pedido[]>([])
   const [loading, setLoading] = useState(true)
-  const [updating, setUpdating] = useState<number | null>(null)
+  const [page] = useState(1)
   const addToast = useUIStore((s) => s.addToast)
+  const limit = 10
 
-  const fetchPedidos = useCallback(async () => {
+  const cancelDialog = useConfirmDialog<Pedido>()
+
+  // Simulate current user roles (in real app, get from authStore)
+  const userRoles = useMemo(() => ['admin'], [])
+
+  const fetchItems = useCallback(async () => {
     try {
-      const res = await api.get('/pedidos/admin?page=1&limit=100')
-      setData(res.data)
+      const res = await api.get<PedidoListResponse>('/pedidos/admin', { params: { page, limit } })
+      setItems(res.data.items)
     } catch {
       addToast('Error al cargar pedidos', 'error')
     } finally {
       setLoading(false)
     }
-  }, [addToast])
+  }, [page, addToast])
 
   useEffect(() => {
-    fetchPedidos()
-  }, [fetchPedidos])
+    fetchItems()
+  }, [fetchItems])
 
-  const handleTransition = async (pedidoId: number, estadoNombre: string) => {
-    setUpdating(pedidoId)
+  const handleTransition = useCallback(
+    async (pedidoId: number, to: string) => {
+      try {
+        await api.put(`/pedidos/${pedidoId}/estado`, { estado_nombre: to })
+        addToast(`Pedido #${pedidoId} → ${STATUS_LABELS[to] ?? to}`, 'success')
+        fetchItems()
+      } catch (error) {
+        const message = handleError(error, 'PedidosPage.handleTransition')
+        addToast(`Error: ${message}`, 'error')
+      }
+    },
+    [fetchItems, addToast]
+  )
+
+  const handleCancel = useCallback(async () => {
+    const item = cancelDialog.item
+    if (!item) return
+
     try {
-      await api.put(`/pedidos/${pedidoId}/estado`, {
-        estado_nombre: estadoNombre,
-      })
-      addToast(`Pedido #${pedidoId} actualizado a "${STATUS_LABELS[estadoNombre] || estadoNombre}"`, 'success')
-      fetchPedidos()
-    } catch (err: any) {
-      const detail = err.response?.data?.detail
-      addToast(detail || 'Error al actualizar estado', 'error')
-    } finally {
-      setUpdating(null)
+      await api.put(`/pedidos/${item.id}/estado`, { estado_nombre: 'cancelado' })
+      addToast(`Pedido #${item.id} cancelado`, 'success')
+      fetchItems()
+      cancelDialog.close()
+    } catch (error) {
+      const message = handleError(error, 'PedidosPage.handleCancel')
+      addToast(`Error: ${message}`, 'error')
     }
-  }
+  }, [cancelDialog, fetchItems, addToast])
+
+  const sortedItems = useMemo(
+    () => [...items].sort((a, b) => new Date(b.fecha_pedido).getTime() - new Date(a.fecha_pedido).getTime()),
+    [items]
+  )
+
+  const { paginatedItems, currentPage, totalPages, totalItems, setCurrentPage } = usePagination(sortedItems, limit)
 
   if (loading) {
-    return <div className="p-8 text-center text-muted-foreground">Cargando pedidos...</div>
+    return (
+      <PageContainer title="Panel de Pedidos" description="Gestión de pedidos del sistema" helpContent={helpContent.pedidos}>
+        <Card className="p-6">
+          <TableSkeleton rows={5} columns={6} />
+        </Card>
+      </PageContainer>
+    )
   }
 
   return (
-    <div className="px-4 py-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-foreground">Gestión de Pedidos</h1>
-        <p className="text-sm text-muted-foreground mt-1">Administrá el estado de todos los pedidos</p>
-      </div>
+    <PageContainer
+      title="Panel de Pedidos"
+      description="Gestión de pedidos del sistema"
+      helpContent={helpContent.pedidos}
+    >
+      {/* Confirm Cancel Dialog */}
+      <ConfirmDialog
+        isOpen={cancelDialog.isOpen}
+        onClose={cancelDialog.close}
+        onConfirm={handleCancel}
+        title="Cancelar Pedido"
+        message={`¿Estás seguro de cancelar el pedido #${cancelDialog.item?.id}?`}
+        confirmLabel="Cancelar Pedido"
+      />
 
-      {!data || data.items.length === 0 ? (
-        <div className="text-center py-16 text-muted-foreground">
-          <p className="text-lg">No hay pedidos registrados</p>
-        </div>
+      {/* Table */}
+      {items.length === 0 ? (
+        <Card className="p-6">
+          <div className="text-center py-12 text-muted-foreground">
+            <p className="text-lg mb-2">No hay pedidos todavía</p>
+            <p className="text-sm">Los pedidos aparecerán aquí cuando los clientes realicen compras</p>
+          </div>
+        </Card>
       ) : (
-        <div className="space-y-4">
-          {data.items.map((pedido) => {
-            const nextActions = NEXT_STATES[pedido.estado_nombre] || []
-            return (
-              <Card key={pedido.id} className="p-5">
-                <div className="flex items-start justify-between flex-wrap gap-4">
-                  <div className="flex-1 min-w-[200px]">
-                    <div className="flex items-center gap-3 mb-1">
-                      <span className="font-semibold text-foreground">Pedido #{pedido.id}</span>
-                      <span className={`text-xs px-2.5 py-1 rounded-full border font-medium ${STATUS_COLORS[pedido.estado_nombre] || 'bg-muted text-muted-foreground'}`}>
-                        {STATUS_LABELS[pedido.estado_nombre] || pedido.estado_nombre}
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Usuario #{pedido.usuario_id} — {new Date(pedido.fecha_pedido).toLocaleString('es-AR')}
-                    </p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {pedido.detalles?.length || 0} producto{(pedido.detalles?.length || 0) !== 1 ? 's' : ''}
-                      {pedido.detalles && pedido.detalles.length > 0 && (
-                        <>: {pedido.detalles.slice(0, 3).map((d) => d.nombre_snapshot).join(', ')}{pedido.detalles.length > 3 ? '...' : ''}</>
-                      )}
-                    </p>
-                  </div>
+        <Card className="overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted border-b border-border">
+                <tr>
+                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">#</th>
+                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Cliente</th>
+                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Estado</th>
+                  <th className="text-right px-4 py-3 font-medium text-muted-foreground">Total</th>
+                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Fecha</th>
+                  <th className="text-right px-4 py-3 font-medium text-muted-foreground">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {paginatedItems.map((item) => {
+                  const transitions = ALLOWED_TRANSITIONS[item.estado_nombre] ?? []
+                  const availableTransitions = transitions.filter((t) =>
+                    t.roles.some((r) => userRoles.includes(r))
+                  )
 
-                  <div className="text-right">
-                    <p className="font-bold text-primary text-lg">${pedido.total.toFixed(2)}</p>
-                  </div>
-
-                  {nextActions.length > 0 && (
-                    <div className="flex gap-2 w-full sm:w-auto mt-2 sm:mt-0">
-                      {nextActions.map((action) => (
-                        <Button
-                          key={action.nombre}
-                          size="sm"
-                          variant={action.color === 'red' ? 'outline' : 'primary'}
-                          onClick={() => handleTransition(pedido.id, action.nombre)}
-                          disabled={updating === pedido.id}
-                        >
-                          {updating === pedido.id ? '...' : action.label}
-                        </Button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </Card>
-            )
-          })}
-        </div>
+                  return (
+                    <tr key={item.id} className="hover:bg-accent transition-colors">
+                      <td className="px-4 py-3 font-medium text-foreground">#{item.id}</td>
+                      <td className="px-4 py-3">
+                        <span className="text-foreground">{item.usuario_nombre ?? `Usuario #${item.usuario_id}`}</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge variant={STATUS_COLORS[item.estado_nombre] ?? 'info'}>
+                          {STATUS_LABELS[item.estado_nombre] ?? item.estado_nombre}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3 text-right font-medium">{formatCurrency(item.total)}</td>
+                      <td className="px-4 py-3 text-muted-foreground">
+                        {new Date(item.fecha_pedido).toLocaleDateString('es-AR', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          {availableTransitions.map((t) =>
+                            t.to === 'cancelado' ? (
+                              <Button
+                                key={t.to}
+                                variant="outline"
+                                size="sm"
+                                onClick={() => cancelDialog.open(item)}
+                                aria-label={`Cancelar pedido #${item.id}`}
+                              >
+                                {t.label}
+                              </Button>
+                            ) : (
+                              <Button
+                                key={t.to}
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleTransition(item.id, t.to)}
+                                aria-label={`${t.label} pedido #${item.id}`}
+                              >
+                                {t.label}
+                              </Button>
+                            )
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between p-4 border-t border-border">
+              <span className="text-sm text-muted-foreground">Total: {totalItems} pedidos</span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage <= 1}
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  aria-label="Página anterior"
+                >
+                  Anterior
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  Pág. {currentPage} de {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  aria-label="Página siguiente"
+                >
+                  Siguiente
+                </Button>
+              </div>
+            </div>
+          )}
+        </Card>
       )}
-    </div>
+    </PageContainer>
   )
 }

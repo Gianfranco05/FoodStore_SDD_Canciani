@@ -17,7 +17,6 @@ class Producto(BaseModel, SQLModel, table=True):
     categorias: List["ProductoCategoria"] = Relationship(back_populates="producto")
     ingredientes: List["ProductoIngrediente"] = Relationship(back_populates="producto")
 
-
 class ProductoCategoria(SQLModel, table=True):
     __tablename__ = "producto_categorias"
     

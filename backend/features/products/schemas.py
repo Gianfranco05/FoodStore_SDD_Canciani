@@ -53,6 +53,7 @@ class ProductoResponse(BaseModel):
     ingredientes: List[IngredienteInfo] = []
     creado_en: Optional[datetime] = None
     actualizado_en: Optional[datetime] = None
+    eliminado_en: Optional[datetime] = None
 
     class Config:
         from_attributes = True

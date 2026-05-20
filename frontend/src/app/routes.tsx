@@ -8,6 +8,7 @@ import ForbiddenPage from '../pages/ForbiddenPage'
 import CatalogoPage from '../pages/CatalogoPage'
 import ProductoDetallePage from '../pages/ProductoDetallePage'
 import CartPage from '../pages/CartPage'
+import CheckoutPage from '../pages/CheckoutPage'
 import DireccionesPage from '../pages/DireccionesPage'
 import PerfilPage from '../pages/PerfilPage'
 import OrdersPage from '../pages/OrdersPage'
@@ -31,11 +32,14 @@ export function AppRoutes() {
       <Route path="/productos/:id" element={<Layout />}>
         <Route index element={<ProductoDetallePage />} />
       </Route>
+      <Route path="/cart" element={<Layout />}>
+        <Route index element={<CartPage />} />
+      </Route>
 
       {/* Rutas protegidas (cualquier usuario autenticado) */}
       <Route element={<ProtectedRoute />}>
         <Route element={<Layout />}>
-          <Route path="/cart" element={<CartPage />} />
+          <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/orders" element={<OrdersPage />} />
           <Route path="/orders/:id" element={<OrderDetailPage />} />
           <Route path="/orders/:id/success" element={<PagoExitosoPage />} />

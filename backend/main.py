@@ -92,6 +92,7 @@ def create_app() -> FastAPI:
 
     from features.payments.router import router as pagos_router
     app.include_router(pagos_router, tags=["pagos"])
+
     
     # Registrar endpoint de prueba en la raíz para verificar conexión
     @app.get("/api/v1/test")

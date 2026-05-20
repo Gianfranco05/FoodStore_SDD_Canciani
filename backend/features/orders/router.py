@@ -53,7 +53,7 @@ async def get_pedido(
     service: OrderService = Depends(get_order_service),
 ):
     """Obtiene detalle de un pedido. Usuarios normales ven solo los suyos; admins ven cualquiera."""
-    user_roles = [r.nombre.lower() if hasattr(r, 'nombre') else str(r).lower() for r in (current_user.roles or [])]
+    user_roles = [ur.rol.nombre.lower() if ur.rol else "" for ur in (current_user.roles or [])]
     is_admin = "admin" in user_roles
 
     if is_admin:
@@ -85,7 +85,7 @@ async def update_estado_pedido(
     service: OrderService = Depends(get_order_service),
 ):
     """Actualiza el estado de un pedido siguiendo la FSM."""
-    user_roles = [r.nombre.lower() if hasattr(r, 'nombre') else str(r).lower() for r in (current_user.roles or [])]
+    user_roles = [ur.rol.nombre.lower() if ur.rol else "" for ur in (current_user.roles or [])]
     
     pedido = service.update_estado(pedido_id, data, user_roles, current_user.id)
     response_data = service._build_response(pedido)

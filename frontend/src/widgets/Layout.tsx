@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '../stores'
 import { useUIStore } from '../stores/uiStore'
@@ -76,29 +76,60 @@ function ThemeToggle() {
   )
 }
 
+function ChevronLeftIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={cn('transition-transform duration-200', className)}
+      aria-hidden="true"
+    >
+      <path d="m15 18-6-6 6-6" />
+    </svg>
+  )
+}
+
 export function Layout() {
   const { user, isAuthenticated, logout } = useAuthStore()
   const navigate = useNavigate()
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
   const navItems = getFilteredNavItems(user?.roles)
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     logout()
     navigate('/login')
-  }
+  }, [logout, navigate])
+
+  const toggleCollapse = useCallback(() => {
+    setSidebarCollapsed((prev) => !prev)
+  }, [])
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* Header */}
-      <header className="bg-card shadow-sm border-b border-border">
+      <header
+        className={cn(
+          'bg-card shadow-sm border-b border-border fixed top-0 right-0 z-40 transition-all duration-200',
+          sidebarCollapsed ? 'left-16 lg:left-16' : 'left-0 lg:left-64'
+        )}
+      >
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
             {/* Hamburger for mobile */}
             <button
               className="lg:hidden p-2 rounded-md hover:bg-accent transition-colors"
               onClick={() => setSidebarOpen(!sidebarOpen)}
+              aria-label={sidebarOpen ? 'Cerrar menú' : 'Abrir menú'}
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 {sidebarOpen ? (
@@ -109,13 +140,12 @@ export function Layout() {
               </svg>
             </button>
 
-            <Link to="/" className="text-xl font-bold text-primary">
+            <Link to="/" className="text-xl font-bold text-primary whitespace-nowrap">
               FoodStore
             </Link>
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Theme Toggle */}
             <ThemeToggle />
             <CartBadge />
             {isAuthenticated && user ? (
@@ -144,7 +174,7 @@ export function Layout() {
         </div>
       </header>
 
-      <div className="flex flex-1">
+      <div className="flex flex-1 pt-14">
         {/* Sidebar overlay (mobile) */}
         {sidebarOpen && (
           <div
@@ -156,37 +186,63 @@ export function Layout() {
         {/* Sidebar */}
         <aside
           className={cn(
-            'fixed lg:static inset-y-0 left-0 z-30 w-64 bg-card border-r border-border',
-            'transform transition-transform duration-200 ease-in-out',
+            'fixed lg:static inset-y-0 left-0 z-30 bg-card border-r border-border',
+            'transform transition-all duration-200 ease-in-out',
+            'flex flex-col',
             sidebarOpen ? 'translate-x-0' : '-translate-x-full',
-            'lg:translate-x-0 lg:block pt-16 lg:pt-4'
+            'lg:translate-x-0',
+            sidebarCollapsed ? 'w-16' : 'w-64'
           )}
         >
-          <nav className="px-3 py-4 space-y-1">
+          {/* Collapse toggle (desktop only) */}
+          <button
+            onClick={toggleCollapse}
+            className={cn(
+              'hidden lg:flex items-center justify-center h-12 border-b border-border',
+              'text-muted-foreground hover:text-foreground hover:bg-accent transition-colors',
+              sidebarCollapsed ? 'w-16' : 'w-64'
+            )}
+            aria-label={sidebarCollapsed ? 'Expandir sidebar' : 'Colapsar sidebar'}
+          >
+            <ChevronLeftIcon className={sidebarCollapsed ? 'rotate-180' : ''} />
+          </button>
+
+          <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
             {navItems.map((item) => {
               const isActive = location.pathname === item.path
               return (
                 <Link
                   key={item.path}
                   to={item.path}
-                  onClick={() => setSidebarOpen(false)}
+                  onClick={() => {
+                    setSidebarOpen(false)
+                  }}
                   className={cn(
-                    'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                    'flex items-center rounded-lg text-sm font-medium transition-colors',
+                    sidebarCollapsed ? 'justify-center px-0 py-2.5' : 'gap-3 px-3 py-2.5',
                     isActive
                       ? 'bg-primary/10 text-primary border border-primary/20'
                       : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                   )}
+                  title={sidebarCollapsed ? item.label : undefined}
                 >
-                  <span className="text-lg">{item.icon}</span>
-                  {item.label}
+                  <span className={cn('text-lg', sidebarCollapsed ? '' : '')}>{item.icon}</span>
+                  {!sidebarCollapsed && <span>{item.label}</span>}
                 </Link>
               )
             })}
+
+            {/* Tooltip-style label on hover when collapsed could be added with CSS */}
           </nav>
         </aside>
 
         {/* Main content */}
-        <main className="flex-1 overflow-auto">
+        <main
+          className={cn(
+            'flex-1 overflow-auto transition-all duration-200',
+            sidebarCollapsed ? 'lg:ml-0' : 'lg:ml-0'
+          )}
+        >
           <Outlet />
         </main>
       </div>

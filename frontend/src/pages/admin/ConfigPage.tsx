@@ -1,7 +1,12 @@
-import { useState, useEffect } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useCallback, useActionState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { adminApi } from '../../lib/adminApi'
+import { Button, Card, PageContainer } from '../../shared/ui'
+import { HorariosEditor } from '../../shared/ui/HorariosEditor'
 import { useUIStore } from '../../stores/uiStore'
+import { handleError } from '../../shared/utils/logger'
+import type { FormState } from '../../shared/types/form'
+import { helpContent } from './helpContent'
 
 interface ConfigItem {
   clave: string
@@ -10,167 +15,175 @@ interface ConfigItem {
   updated_at: string | null
 }
 
+const HORARIOS_KEY = 'horarios_local'
+
+function parseConfigs(configs: ConfigItem[]) {
+  const normal: ConfigItem[] = []
+  let horariosValor = ''
+  for (const c of configs) {
+    if (c.clave === HORARIOS_KEY) {
+      horariosValor = c.valor
+    } else {
+      normal.push(c)
+    }
+  }
+  return { normal, horariosValor }
+}
+
 export default function ConfigPage() {
   const queryClient = useQueryClient()
   const addToast = useUIStore((s) => s.addToast)
-  const [editValues, setEditValues] = useState<Record<string, string>>({})
 
   const { data: configs, isLoading, isError, refetch } = useQuery({
     queryKey: ['admin-config'],
     queryFn: () => adminApi.getConfig(),
   })
 
-  useEffect(() => {
-    if (configs) {
-      const values: Record<string, string> = {}
-      configs.forEach((c: ConfigItem) => { values[c.clave] = c.valor })
-      setEditValues((prev) => {
-        // Only set if prev is empty (first load)
-        if (Object.keys(prev).length === 0) return values
-        return prev
-      })
-    }
-  }, [configs])
+  const { normal: normalConfigs, horariosValor } = parseConfigs(configs ?? [])
 
-  const saveMutation = useMutation({
-    mutationFn: (data: Record<string, string>) => adminApi.updateConfig(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-config'] })
-      addToast('Configuración actualizada correctamente', 'success')
+  const submitAction = useCallback(
+    async (_prevState: FormState, formData: FormData): Promise<FormState> => {
+      const values: Record<string, string> = {}
+      for (const [key, value] of formData.entries()) {
+        if (key.startsWith('config_')) {
+          const configKey = key.slice(7)
+          values[configKey] = value as string
+        }
+      }
+
+      try {
+        await adminApi.updateConfig(values)
+        queryClient.invalidateQueries({ queryKey: ['admin-config'] })
+        addToast('Configuración actualizada correctamente', 'success')
+        return { isSuccess: true, message: 'Guardado correctamente' }
+      } catch (error) {
+        const message = handleError(error, 'ConfigPage.submitAction')
+        addToast(`Error al guardar: ${message}`, 'error')
+        return { isSuccess: false, message: `Error: ${message}` }
+      }
     },
-    onError: () => {
-      addToast('Error al guardar la configuración', 'error')
-    },
+    [queryClient, addToast]
+  )
+
+  const [, formAction, isPending] = useActionState<FormState, FormData>(submitAction, {
+    isSuccess: false,
   })
 
-  const handleSave = () => {
-    saveMutation.mutate(editValues)
-  }
+  const hasConfigs = (configs ?? []).length > 0
 
   if (isLoading) {
     return (
-      <div className="p-6 space-y-4">
-        <div className="h-8 w-48 bg-muted rounded animate-pulse" />
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="h-16 bg-muted rounded-lg animate-pulse" />
-        ))}
-      </div>
+      <PageContainer
+        title="Configuración del Sistema"
+        description="Parámetros generales del sistema"
+        helpContent={helpContent.config}
+      >
+        <Card className="p-6">
+          <div className="space-y-4 animate-pulse">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-16 bg-muted rounded-lg" />
+            ))}
+          </div>
+        </Card>
+      </PageContainer>
     )
   }
 
   if (isError) {
     return (
-      <div className="p-6 text-center">
-        <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-6 max-w-md mx-auto">
-          <h3 className="text-destructive font-semibold mb-2">Error al cargar configuración</h3>
-          <button onClick={() => refetch()} className="px-4 py-2 bg-destructive text-white rounded-lg hover:bg-destructive/90 text-sm">
-            Reintentar
-          </button>
-        </div>
-      </div>
+      <PageContainer
+        title="Configuración del Sistema"
+        description="Parámetros generales del sistema"
+        helpContent={helpContent.config}
+      >
+        <Card className="p-6">
+          <div className="text-center py-8">
+            <h3 className="text-destructive font-semibold mb-2">Error al cargar configuración</h3>
+            <Button onClick={() => refetch()}>Reintentar</Button>
+          </div>
+        </Card>
+      </PageContainer>
     )
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-foreground">Configuración del Sistema</h1>
-        <button
-          onClick={handleSave}
-          disabled={saveMutation.isPending}
-          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 text-sm font-medium"
-        >
-          {saveMutation.isPending ? 'Guardando...' : 'Guardar'}
-        </button>
-      </div>
-
-      <div className="bg-card rounded-xl shadow-sm border border-border divide-y divide-border">
-        {(configs ?? []).length === 0 ? (
-          <div className="p-6 text-center text-muted-foreground">
+    <PageContainer
+      title="Configuración del Sistema"
+      description="Parámetros generales del sistema"
+      helpContent={helpContent.config}
+      actions={
+        !hasConfigs ? null : (
+          <Button type="submit" form="config-form" isLoading={isPending}>
+            Guardar
+          </Button>
+        )
+      }
+    >
+      <form id="config-form" action={formAction}>
+        {!hasConfigs ? (
+          <Card className="p-6 text-center text-muted-foreground">
             <p className="text-lg font-medium">Sin configuraciones</p>
             <p className="text-sm mt-1">No hay configuraciones del sistema todavía. Agregalas vía API.</p>
-          </div>
+          </Card>
         ) : (
-          (configs ?? []).map((config: ConfigItem) => (
-            <div key={config.clave} className="p-4 sm:flex sm:items-start sm:gap-4">
-              <div className="sm:w-1/3 mb-2 sm:mb-0">
-                <label className="block text-sm font-medium text-foreground">{config.clave}</label>
-                {config.updated_by && (
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Última modificación: {config.updated_by}
-                    {config.updated_at && ` — ${new Date(config.updated_at).toLocaleDateString()}`}
-                  </p>
-                )}
+          <div className="space-y-6">
+            {/* Configs normales (texto plano) */}
+            {normalConfigs.length > 0 && (
+              <Card className="overflow-hidden">
+                <div className="divide-y divide-border">
+                  {normalConfigs.map((config: ConfigItem) => (
+                    <div key={config.clave} className="p-4 sm:flex sm:items-start sm:gap-4">
+                      <div className="sm:w-1/3 mb-2 sm:mb-0">
+                        <label className="block text-sm font-medium text-foreground">
+                          {config.clave.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+                        </label>
+                        {config.updated_by && (
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            Última modificación: {config.updated_by}
+                            {config.updated_at && ` — ${new Date(config.updated_at).toLocaleDateString()}`}
+                          </p>
+                        )}
+                      </div>
+                      <div className="sm:w-2/3">
+                        <textarea
+                          name={`config_${config.clave}`}
+                          defaultValue={config.valor}
+                          className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring bg-background text-foreground"
+                          rows={2}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
+
+            {/* Horarios del Local */}
+            <Card>
+              <div className="px-4 py-3 bg-muted/50 border-b border-border">
+                <p className="text-sm font-medium text-foreground uppercase tracking-wider">
+                  Horarios del Local
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Configurá los horarios de apertura y cierre para cada día de la semana.
+                  Usá <strong>+ turno</strong> para agregar un segundo turno (ej. turno mañana y tarde).
+                </p>
               </div>
-              <div className="sm:w-2/3">
-                <textarea
-                  value={editValues[config.clave] ?? config.valor}
-                  onChange={(e) => setEditValues((prev) => ({ ...prev, [config.clave]: e.target.value }))}
-                  className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  rows={2}
+              <div className="p-4">
+                <HorariosEditor
+                  valor={horariosValor}
+                  onChange={(json) => {
+                    // Sync the hidden input for form submission
+                    const hidden = document.querySelector<HTMLInputElement>('input[name="config_horarios_local"]')
+                    if (hidden) hidden.value = json
+                  }}
                 />
+                <input type="hidden" name="config_horarios_local" defaultValue={horariosValor} />
               </div>
-            </div>
-          ))
+            </Card>
+          </div>
         )}
-      </div>
-
-      {/* Próximas configuraciones */}
-      <div className="bg-card rounded-xl shadow-sm border border-border divide-y divide-border opacity-60">
-        <div className="px-4 py-3 bg-muted/50">
-          <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-            Próximamente más configuraciones
-          </p>
-        </div>
-
-        <div className="p-4 sm:flex sm:items-start sm:gap-4">
-          <div className="sm:w-1/3 mb-2 sm:mb-0">
-            <span className="block text-sm font-medium text-muted-foreground">Tiempo de preparación por defecto</span>
-            <span className="text-xs text-muted-foreground/60 mt-0.5">Tiempo estimado en minutos para nuevos productos</span>
-          </div>
-          <div className="sm:w-2/3">
-            <div className="w-full border border-dashed border-border rounded-lg px-3 py-2 text-sm text-muted-foreground/40 italic">
-              Próximamente
-            </div>
-          </div>
-        </div>
-
-        <div className="p-4 sm:flex sm:items-start sm:gap-4">
-          <div className="sm:w-1/3 mb-2 sm:mb-0">
-            <span className="block text-sm font-medium text-muted-foreground">Porcentaje de IVA</span>
-            <span className="text-xs text-muted-foreground/60 mt-0.5">Impuesto aplicado a todos los productos</span>
-          </div>
-          <div className="sm:w-2/3">
-            <div className="w-full border border-dashed border-border rounded-lg px-3 py-2 text-sm text-muted-foreground/40 italic">
-              Próximamente
-            </div>
-          </div>
-        </div>
-
-        <div className="p-4 sm:flex sm:items-start sm:gap-4">
-          <div className="sm:w-1/3 mb-2 sm:mb-0">
-            <span className="block text-sm font-medium text-muted-foreground">Costo de envío</span>
-            <span className="text-xs text-muted-foreground/60 mt-0.5">Monto fijo o mínimo para envío gratis</span>
-          </div>
-          <div className="sm:w-2/3">
-            <div className="w-full border border-dashed border-border rounded-lg px-3 py-2 text-sm text-muted-foreground/40 italic">
-              Próximamente
-            </div>
-          </div>
-        </div>
-
-        <div className="p-4 sm:flex sm:items-start sm:gap-4">
-          <div className="sm:w-1/3 mb-2 sm:mb-0">
-            <span className="block text-sm font-medium text-muted-foreground">Horarios del local</span>
-            <span className="text-xs text-muted-foreground/60 mt-0.5">Horario de apertura y cierre</span>
-          </div>
-          <div className="sm:w-2/3">
-            <div className="w-full border border-dashed border-border rounded-lg px-3 py-2 text-sm text-muted-foreground/40 italic">
-              Próximamente
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+      </form>
+    </PageContainer>
   )
 }

@@ -80,6 +80,17 @@ async def delete_producto(
     service.soft_delete(producto_id)
 
 
+@router.post("/{producto_id}/restore", response_model=ProductoResponse)
+async def restore_producto(
+    producto_id: int,
+    service: ProductoService = Depends(get_producto_service),
+    _: Usuario = Depends(require_role("admin")),
+):
+    """Restaura un producto eliminado. Requiere ADMIN."""
+    producto = service.restore(producto_id)
+    return service._build_response(producto)
+
+
 @router.put("/{producto_id}/categorias", response_model=ProductoResponse)
 async def assign_categorias(
     producto_id: int,

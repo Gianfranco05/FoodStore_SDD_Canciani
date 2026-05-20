@@ -110,6 +110,16 @@ class ProductoService:
             raise NotFoundException("Producto", producto_id)
         self.repo.soft_delete(producto_id)
 
+    def restore(self, producto_id: int) -> Producto:
+        producto = self.repo.get_by_id(producto_id)
+        if not producto:
+            raise NotFoundException("Producto", producto_id)
+        producto.eliminado_en = None
+        producto.activo = True
+        self._session.flush()
+        self._session.refresh(producto)
+        return producto
+
     def update_stock(self, producto_id: int, cantidad: int, operacion: str = "set") -> Producto:
         producto = self.repo.get_by_id(producto_id)
         if not producto:
@@ -161,4 +171,5 @@ class ProductoService:
             ingredientes=ingredientes,
             creado_en=producto.creado_en,
             actualizado_en=producto.actualizado_en,
+            eliminado_en=producto.eliminado_en,
         )

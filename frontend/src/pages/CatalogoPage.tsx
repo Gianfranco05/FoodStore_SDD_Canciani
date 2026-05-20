@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { api } from '../lib/api'
 import { Input } from '../shared/ui/Input'
-import { Button } from '../shared/ui/Button'
+import { Button, Pagination } from '../shared/ui'
 import { ProductCard, ProductCardItem } from '../widgets/ProductCard/ProductCard'
 import { useUIStore } from '../stores/uiStore'
 
@@ -208,43 +208,15 @@ export default function CatalogoPage() {
           </div>
 
           {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-4 mt-8">
-              <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
-                Anterior
-              </Button>
-              <div className="flex gap-1">
-                {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                  let pageNum: number
-                  if (totalPages <= 5) {
-                    pageNum = i + 1
-                  } else if (page <= 3) {
-                    pageNum = i + 1
-                  } else if (page >= totalPages - 2) {
-                    pageNum = totalPages - 4 + i
-                  } else {
-                    pageNum = page - 2 + i
-                  }
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => setPage(pageNum)}
-                      className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
-                        pageNum === page
-                          ? 'bg-primary text-white'
-                          : 'text-muted-foreground hover:bg-accent'
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
-                  )
-                })}
-              </div>
-              <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
-                Siguiente
-              </Button>
-            </div>
-          )}
+          <div className="mt-8">
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              totalItems={total}
+              itemsPerPage={limit}
+              onPageChange={setPage}
+            />
+          </div>
         </>
       )}
     </div>

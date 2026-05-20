@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Card } from '../shared/ui/Card'
 import { Button } from '../shared/ui/Button'
 import { Input } from '../shared/ui/Input'
@@ -8,6 +8,7 @@ import { useAuthStore } from '../stores'
 
 export default function LoginPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const login = useAuthStore((s) => s.login)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -23,7 +24,7 @@ export default function LoginPage() {
       const res = await api.post('/auth/login', { email, password })
       const { access_token, refresh_token, user } = res.data
       login(access_token, refresh_token, user)
-      navigate('/')
+      navigate(searchParams.get('redirect') || '/')
     } catch (err: any) {
       const status = err.response?.status
       const detail = err.response?.data?.detail

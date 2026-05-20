@@ -1,82 +1,21 @@
-import { useState, useCallback } from 'react'
+import { useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useCartStore } from '../stores'
-import { api } from '../lib/api'
+import { useCartStore, useAuthStore } from '../stores'
 import { Button } from '../shared/ui/Button'
 import { Card } from '../shared/ui/Card'
-import { useUIStore } from '../stores/uiStore'
-
-interface Direccion {
-  id: number
-  nombre: string
-  calle: string
-  numero: string
-  ciudad: string
-  provincia?: string | null
-  codigo_postal: string
-  referencias?: string | null
-  es_default: boolean
-}
 
 export default function CartPage() {
   const { items, removeItem, updateQuantity, clearCart, totalItems, totalPrice } = useCartStore()
   const navigate = useNavigate()
-  const addToast = useUIStore((s) => s.addToast)
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 
-  const [showCheckout, setShowCheckout] = useState(false)
-  const [direcciones, setDirecciones] = useState<Direccion[]>([])
-  const [selectedDirId, setSelectedDirId] = useState<number | null>(null)
-  const [loadingDirs, setLoadingDirs] = useState(false)
-  const [creating, setCreating] = useState(false)
-
-  const openCheckout = useCallback(async () => {
-    setShowCheckout(true)
-    setLoadingDirs(true)
-    try {
-      const res = await api.get('/direcciones/')
-      const dirs: Direccion[] = res.data
-      setDirecciones(dirs)
-      // Preseleccionar default
-      const defaultDir = dirs.find((d) => d.es_default)
-      if (defaultDir) setSelectedDirId(defaultDir.id)
-      else if (dirs.length > 0) setSelectedDirId(dirs[0].id)
-    } catch {
-      addToast('Error al cargar direcciones', 'error')
-    } finally {
-      setLoadingDirs(false)
-    }
-  }, [addToast])
-
-  const handleCreateOrder = async () => {
-    if (!selectedDirId) {
-      addToast('Seleccioná una dirección de entrega', 'warning')
+  const openCheckout = useCallback(() => {
+    if (!isAuthenticated) {
+      navigate('/login?redirect=/cart')
       return
     }
-    setCreating(true)
-    try {
-      const payload = {
-        direccion_entrega_id: selectedDirId,
-        items: items.map((item) => ({
-          producto_id: item.productoId,
-          nombre_snapshot: item.nombre,
-          precio_snapshot: item.precio,
-          cantidad: item.cantidad,
-          excluded_ingredient_ids: (item.excludedIngredientIds || []).join(','),
-          personalizacion_snapshot: item.personalizacion || null,
-        })),
-      }
-      const res = await api.post('/pedidos', payload)
-      clearCart()
-      addToast('Pedido creado con éxito!', 'success')
-      setShowCheckout(false)
-      navigate(`/orders/${res.data.id}`)
-    } catch (err: any) {
-      const detail = err.response?.data?.detail
-      addToast(detail || 'Error al crear pedido', 'error')
-    } finally {
-      setCreating(false)
-    }
-  }
+    navigate('/checkout')
+  }, [isAuthenticated, navigate])
 
   if (items.length === 0) {
     return (
@@ -186,104 +125,6 @@ export default function CartPage() {
         </Button>
       </Card>
 
-      {/* Checkout Modal */}
-      {showCheckout && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <Card className="w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold mb-4">Confirmar Pedido</h2>
-
-            {/* Resumen del carrito */}
-            <div className="mb-4">
-              <h3 className="font-semibold text-foreground mb-2">Productos</h3>
-              <div className="space-y-2">
-                {items.map((item) => (
-                  <div key={item.productoId} className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      {item.cantidad}x {item.nombre}
-                    </span>
-                    <span className="font-medium">${(item.precio * item.cantidad).toFixed(2)}</span>
-                  </div>
-                ))}
-              </div>
-              <hr className="my-2" />
-              <div className="flex justify-between font-bold">
-                <span>Total</span>
-                <span className="text-primary">${totalPrice().toFixed(2)}</span>
-              </div>
-            </div>
-
-            {/* Selección de dirección */}
-            <div className="mb-4">
-              <h3 className="font-semibold text-foreground mb-2">Dirección de Entrega</h3>
-              {loadingDirs ? (
-                <p className="text-sm text-muted-foreground">Cargando direcciones...</p>
-              ) : direcciones.length === 0 ? (
-                <div className="text-sm text-muted-foreground">
-                  <p className="mb-2">No tenés direcciones guardadas.</p>
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      setShowCheckout(false)
-                      navigate('/direcciones')
-                    }}
-                  >
-                    + Agregar Dirección
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {direcciones.map((dir) => (
-                    <label
-                      key={dir.id}
-                      className={`
-                        flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors
-                        ${selectedDirId === dir.id
-                          ? 'border-primary bg-primary/10'
-                          : 'border-border hover:border-border'
-                        }
-                      `}
-                    >
-                      <input
-                        type="radio"
-                        name="direccion"
-                        checked={selectedDirId === dir.id}
-                        onChange={() => setSelectedDirId(dir.id)}
-                        className="mt-1 text-primary focus-visible:ring-ring"
-                      />
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-sm">{dir.nombre}</span>
-                          {dir.es_default && (
-                            <span className="text-xs bg-green-100 text-primary px-1.5 py-0.5 rounded-full">
-                              Default
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          {dir.calle} {dir.numero}, {dir.ciudad}
-                          {dir.provincia ? `, ${dir.provincia}` : ''}
-                        </p>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="flex justify-end gap-3 mt-6">
-              <Button variant="outline" onClick={() => setShowCheckout(false)}>
-                Cancelar
-              </Button>
-              <Button
-                onClick={handleCreateOrder}
-                disabled={creating || !selectedDirId || direcciones.length === 0}
-              >
-                {creating ? 'Creando Pedido...' : 'Confirmar Pedido'}
-              </Button>
-            </div>
-          </Card>
-        </div>
-      )}
     </div>
   )
 }
